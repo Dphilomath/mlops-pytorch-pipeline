@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import yaml
 from src.dataset import get_dataloaders
-from model import get_model
+from src.model import get_model
 
 def load_config(config_path: str) -> dict:
     with open(config_path) as f:
