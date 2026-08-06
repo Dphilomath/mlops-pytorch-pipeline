@@ -1,7 +1,7 @@
 # docker/Dockerfile.serve – multi‑stage build for a lightweight serving image
 FROM python:3.11-slim AS builder
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements/serve.txt requirements.txt
 # Install only runtime dependencies and clean pip cache
 RUN pip install --no-cache-dir -r requirements.txt && rm -rf /root/.cache/pip
 

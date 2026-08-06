@@ -1,0 +1,4 @@
+torch==2.3.0
+torchvision==0.18.0
+pyyaml==6.0.2
+tqdm==4.66.5
