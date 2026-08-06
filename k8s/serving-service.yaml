@@ -8,6 +8,6 @@ spec:
     app: model-serving
   ports:
   - protocol: TCP
-    port: 80        # Service port exposed inside the cluster
-    targetPort: 8080 # Container port
+    port: 9876
+    targetPort: 9876
   type: ClusterIP
