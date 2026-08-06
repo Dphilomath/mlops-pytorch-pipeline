@@ -22,9 +22,10 @@ services:
       context: .
       dockerfile: docker/Dockerfile.serve
     container_name: serving
-    command: uvicorn src.serve:app --host 0.0.0.0 --port 8080
     ports:
-      - "8080:8080"
+      - "9876:9876"
+    # command removed – ENTRYPOINT in Dockerfile sets the port
+
     volumes:
       - ./checkpoints:/app/checkpoints:ro
     deploy:
