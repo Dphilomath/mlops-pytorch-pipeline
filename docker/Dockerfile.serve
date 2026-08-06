@@ -1,0 +1,16 @@
+# docker/Dockerfile.serve – multi‑stage build for a lightweight serving image
+FROM python:3.11-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+# Install only runtime dependencies and clean pip cache
+RUN pip install --no-cache-dir -r requirements.txt && rm -rf /root/.cache/pip
+
+FROM python:3.11-slim
+WORKDIR /app
+# Copy only the installed packages from the builder stage
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+# Copy source code and configuration (large data/checkpoints are ignored via .dockerignore)
+COPY src/ ./src/
+COPY configs/ ./configs/
+# Entry point for the FastAPI server
+ENTRYPOINT ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "8080"]

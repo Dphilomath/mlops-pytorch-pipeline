@@ -1,0 +1,12 @@
+# .dockerignore – files/folders to exclude from Docker build context
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+data/
+checkpoints/
+*.egg-info/
+*.egg
+*.log
+.gitignore
