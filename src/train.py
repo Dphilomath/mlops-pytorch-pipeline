@@ -4,8 +4,9 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import yaml
-from dataset import get_dataloaders
-from model import get_model
+from tqdm import tqdm
+from src.dataset import get_dataloaders
+from src.model import get_model
 
 def load_config(config_path: str) -> dict:
     with open(config_path) as f:
@@ -22,7 +23,7 @@ def train_one_epoch(
     total_loss = 0.0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(loader):
+    for batch_idx, (inputs, targets) in enumerate(tqdm(loader, desc="Training batches", leave=False)):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -84,6 +85,7 @@ def main():
     checkpoint_dir = Path(config["output"]["checkpoint_dir"])
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     for epoch in range(config["training"]["epochs"]):
+        print(f'Starting epoch {epoch+1}/{config["training"]["epochs"]}', flush=True)
         train_loss, train_acc = train_one_epoch(
             model, train_loader, optimizer, criterion, device
         )

@@ -1,9 +1,9 @@
 # Dockerfile.train – multi‑stage build for a lightweight training image
 FROM python:3.11-slim AS builder
 WORKDIR /app
-COPY requirements.txt .
-# Install only runtime dependencies and clean cache
-RUN pip install --no-cache-dir -r requirements.txt && rm -rf /root/.cache/pip
+COPY requirements/train.txt requirements.txt
+# Install CPU-only runtime dependencies to avoid downloading ~7.5GB of CUDA binaries
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && rm -rf /root/.cache/pip
 
 FROM python:3.11-slim
 WORKDIR /app

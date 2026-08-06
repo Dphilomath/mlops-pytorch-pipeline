@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-training
+  namespace: ml-training
+spec:
+  template:
+    spec:
+      containers:
+      - name: training
+        image: mlops-pytorch-pipeline-train:latest
+        command: ["python", "-m", "src.train"]
+        envFrom:
+        - configMapRef:
+            name: ml-training-config
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/configs
+        - name: data-volume
+          mountPath: /app/data
+        - name: checkpoint-volume
+          mountPath: /app/checkpoints
+      restartPolicy: Never
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ml-training-config
+          items:
+          - key: training_config.yaml
+            path: training_config.yaml
+      - name: data-volume
+        emptyDir: {}
+      - name: checkpoint-volume
+        emptyDir: {}

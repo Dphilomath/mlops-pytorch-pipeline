@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import torch
 from torchvision import transforms
 from PIL import Image
-from model import get_model
+from src.model import get_model
 
 app = FastAPI()
 
@@ -21,10 +21,23 @@ model = get_model(
     architecture=cfg["model"]["architecture"],
     num_classes=cfg["model"]["num_classes"],
 )
+
+# Determine checkpoint location
 checkpoint_dir = cfg["output"]["checkpoint_dir"]
 model_file = os.path.join(checkpoint_dir, cfg["output"]["model_name"])
-if not os.path.isfile(model_file):
-    raise FileNotFoundError(f"Model checkpoint not found at {model_file}")
+import time
+
+# Wait for the model checkpoint to become available (up to 5 minutes)
+max_wait = int(os.getenv("MODEL_WAIT_SECONDS", "300"))
+waited = 0
+while not os.path.isfile(model_file):
+    if waited >= max_wait:
+        raise FileNotFoundError(f"Model checkpoint not found at {model_file} after waiting {max_wait}s")
+    time.sleep(5)
+    waited += 5
+    print(f"Waiting for model checkpoint... {waited}s elapsed", flush=True)
+
+# Load the checkpoint once it exists
 state = torch.load(model_file, map_location=torch.device("cpu"))
 model.load_state_dict(state["model_state_dict"])
 model.eval()
