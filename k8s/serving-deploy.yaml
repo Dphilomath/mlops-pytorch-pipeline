@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-serving
+  namespace: ml-training
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-serving
+  template:
+    metadata:
+      labels:
+        app: model-serving
+    spec:
+      containers:
+      - name: serving
+        image: mlops-pytorch-pipeline-serve:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: ml-training-config
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/configs
+        - name: checkpoint-volume
+          mountPath: /app/checkpoints
+      restartPolicy: Always
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ml-training-config
+          items:
+          - key: serving_config.yaml
+            path: serving_config.yaml
+      - name: checkpoint-volume
+        emptyDir: {}
