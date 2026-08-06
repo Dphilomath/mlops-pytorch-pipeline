@@ -10,3 +10,10 @@ checkpoints/
 *.egg
 *.log
 .gitignore
+# Additional large artefacts
+*.pt
+*.ckpt
+*.h5
+# Any hidden OS files
+.DS_Store
+*.ipynb_checkpoints/
