@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  training:
+    build: .
+    container_name: training
+    command: python -m src.train
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4g
+    environment:
+      - CONFIG_PATH=/app/configs/training_config.yaml
+
+  serving:
+    image: mlops-assgn3:latest
+    container_name: serving
+    command: uvicorn src.serve:app --host 0.0.0.0 --port 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./checkpoints:/app/checkpoints:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2g
+    environment:
+      - CONFIG_PATH=/app/configs/serving_config.yaml
