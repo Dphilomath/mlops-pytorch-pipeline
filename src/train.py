@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import yaml
-from src.dataset import get_dataloaders
-from src.model import get_model
+from dataset import get_dataloaders
+from model import get_model
 
 def load_config(config_path: str) -> dict:
     with open(config_path) as f:
@@ -22,7 +22,7 @@ def train_one_epoch(
     total_loss = 0.0
     correct = 0
     total = 0
-    for inputs, targets in loader:
+    for batch_idx, (inputs, targets) in enumerate(loader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -61,12 +61,13 @@ def evaluate(
     return avg_loss, accuracy
 
 def main():
-    config_path = os.getenv("CONFIG_PATH", "/app/configs/training_config.yaml")
-    config = load_config(config_path)
+    config_path = Path("/app/configs/training_config.yaml")
+    if not config_path.exists():
+        config_path = Path("configs/training_config.yaml")
+    config = load_config(str(config_path))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = get_model(
-        architecture=config["model"]["architecture"],
-        num_classes=config["model"]["num_classes"],
+        architecture=config["model"]["architecture"],  num_classes=config["model"]["num_classes"],
     ).to(device)
     train_loader, val_loader = get_dataloaders(
         data_dir=config["data"]["data_dir"],
