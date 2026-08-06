@@ -85,7 +85,7 @@ def main():
     checkpoint_dir = Path(config["output"]["checkpoint_dir"])
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     for epoch in range(config["training"]["epochs"]):
-        print(f"Starting epoch {epoch+1}/{config["training"]["epochs"]}", flush=True)
+        print(f'Starting epoch {epoch+1}/{config["training"]["epochs"]}', flush=True)
         train_loss, train_acc = train_one_epoch(
             model, train_loader, optimizer, criterion, device
         )
