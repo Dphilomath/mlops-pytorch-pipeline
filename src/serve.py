@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import torch
 from torchvision import transforms
 from PIL import Image
-from model import get_model
+from src.model import get_model
 
 app = FastAPI()
 
