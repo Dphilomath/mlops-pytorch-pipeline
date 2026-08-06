@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   training:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
     container_name: training
     command: python -m src.train
     volumes:
@@ -16,7 +18,9 @@ services:
       - CONFIG_PATH=/app/configs/training_config.yaml
 
   serving:
-    image: mlops-assgn3:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.serve
     container_name: serving
     command: uvicorn src.serve:app --host 0.0.0.0 --port 8080
     ports:
