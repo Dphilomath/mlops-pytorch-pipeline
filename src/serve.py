@@ -21,6 +21,10 @@ model = get_model(
     architecture=cfg["model"]["architecture"],
     num_classes=cfg["model"]["num_classes"],
 )
+
+# Determine checkpoint location
+checkpoint_dir = cfg["output"]["checkpoint_dir"]
+model_file = os.path.join(checkpoint_dir, cfg["output"]["model_name"])
 import time
 
 # Wait for the model checkpoint to become available (up to 5 minutes)
