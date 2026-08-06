@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 # Copy source code
 COPY src/ ./src/
-# The configs directory will be created automatically by the COPY command
-COPY configs/ configs/
+# Copy configuration files into the container's /app directory
+COPY configs/ ./configs/
 # Default command runs training; Docker‑Compose can override for serving
 ENTRYPOINT ["python", "-m", "src.train"]
