@@ -2,7 +2,7 @@
 Provides a simple `get_dataloaders` function that returns
 training and validation DataLoaders.
 The implementation uses torchvision's CIFAR‑10 dataset as a
-placeholder – replace with your own data source as needed.
+placeholder - replace with your own data source as needed.
 """
 
 # pyrefly: ignore [missing-import]
@@ -32,7 +32,7 @@ def get_transforms(train: bool = True) -> transforms.Compose:
 def get_dataloaders(
     data_dir: str,
     batch_size: int = 64,
-    num_workers: int = 2,
+    num_workers: int = 0,
 ) -> tuple[DataLoader, DataLoader]:
     train_dataset = datasets.CIFAR10(
         root=data_dir,
@@ -51,13 +51,13 @@ def get_dataloaders(
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=torch.cuda.is_available(),
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=torch.cuda.is_available(),
     )
     return train_loader, val_loader

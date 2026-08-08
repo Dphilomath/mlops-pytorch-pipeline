@@ -4,7 +4,6 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import yaml
-from tqdm import tqdm
 from src.dataset import get_dataloaders
 from src.model import get_model
 
@@ -23,7 +22,7 @@ def train_one_epoch(
     total_loss = 0.0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(tqdm(loader, desc="Training batches", leave=False)):
+    for batch_idx, (inputs, targets) in enumerate(loader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -34,6 +33,8 @@ def train_one_epoch(
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
+        if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == len(loader):
+            print(f"   Batch {batch_idx + 1}/{len(loader)} - Loss: {loss.item():.4f}", flush=True)
     avg_loss = total_loss / total
     accuracy = correct / total
     return avg_loss, accuracy
