@@ -67,6 +67,8 @@ def main():
     if not config_path.exists():
         config_path = Path("configs/training_config.yaml")
     config = load_config(str(config_path))
+    # Use all available CPU cores for PyTorch linear algebra ops
+    torch.set_num_threads(2)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = get_model(
         architecture=config["model"]["architecture"],  num_classes=config["model"]["num_classes"],
