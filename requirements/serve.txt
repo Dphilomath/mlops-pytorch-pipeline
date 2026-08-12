@@ -4,3 +4,4 @@ gunicorn==22.0.0
 pydantic==2.7.0
 torch==2.3.0
 torchvision==0.18.0
+python-multipart==0.0.9

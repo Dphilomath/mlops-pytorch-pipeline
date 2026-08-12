@@ -17,7 +17,7 @@ spec:
       - name: serving
         image: mlops-pytorch-pipeline-serve:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 9876
         envFrom:
         - configMapRef:
             name: ml-training-config
@@ -26,6 +26,13 @@ spec:
           mountPath: /app/configs
         - name: checkpoint-volume
           mountPath: /app/checkpoints
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
       restartPolicy: Always
       volumes:
       - name: config-volume
@@ -35,4 +42,5 @@ spec:
           - key: serving_config.yaml
             path: serving_config.yaml
       - name: checkpoint-volume
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: checkpoint-pvc

@@ -6,6 +6,7 @@ COPY requirements/serve.txt requirements.txt
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && rm -rf /root/.cache/pip
 
 FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 # Copy only the installed packages from the builder stage
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages

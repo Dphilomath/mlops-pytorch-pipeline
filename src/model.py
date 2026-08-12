@@ -17,7 +17,7 @@ def get_model(architecture: str = "resnet18", num_classes: int = 10):
     }
     if architecture not in arch_map:
         raise ValueError(f"Unsupported architecture '{architecture}'. Supported: {list(arch_map.keys())}")
-    model = arch_map[architecture](pretrained=False)
+    model = arch_map[architecture](weights=None)
     # Replace the final fully‑connected layer to match the number of classes
     if "resnet" in architecture:
         in_features = model.fc.in_features

@@ -1,11 +1,9 @@
-version: "3.9"
 services:
   training:
     build:
       context: .
       dockerfile: docker/Dockerfile.train
     container_name: training
-    command: python -m src.train
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -16,6 +14,8 @@ services:
           memory: 4g
     environment:
       - CONFIG_PATH=/app/configs/training_config.yaml
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
   serving:
     build:
@@ -35,3 +35,4 @@ services:
           memory: 2g
     environment:
       - CONFIG_PATH=/app/configs/serving_config.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
