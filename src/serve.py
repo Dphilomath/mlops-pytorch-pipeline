@@ -94,7 +94,7 @@ async def predict(file: UploadFile = File(...)):
         prob, pred = probs.max(dim=1)
     logger.info(json.dumps({"event":"prediction_requested","filename":file.filename or "<unknown>","timestamp":datetime.datetime.utcnow().isoformat()+"Z"}))
     # CIFAR‑10 class labels (same order as training)
-CIFAR10_LABELS = ["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
+    CIFAR10_LABELS = ["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
     return PredictionResponse(
         predicted_class=pred.item(),
         probability=prob.item(),
