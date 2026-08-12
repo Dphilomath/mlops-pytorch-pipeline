@@ -15,7 +15,10 @@ from src.model import get_model
 app = FastAPI()
 
 logger = logging.getLogger("serving")
-logger.setLevel(logging.INFO)
+# Determine log level from environment (default INFO)
+log_level_str = os.getenv("LOG_LEVEL", "INFO").upper()
+numeric_level = getattr(logging, log_level_str, logging.INFO)
+logger.setLevel(numeric_level)
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter)

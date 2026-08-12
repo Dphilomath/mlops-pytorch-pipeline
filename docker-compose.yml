@@ -15,6 +15,7 @@ services:
     environment:
       - CONFIG_PATH=/app/configs/training_config.yaml
       - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
   serving:
     build:
@@ -34,3 +35,4 @@ services:
           memory: 2g
     environment:
       - CONFIG_PATH=/app/configs/serving_config.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
