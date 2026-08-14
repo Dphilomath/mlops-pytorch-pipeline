@@ -31,7 +31,7 @@ docker compose up --build training
 docker compose up -d serving
 
 # Verify the service
-curl http://localhost:8080/health   # should return {"status":"healthy"}
+curl http://localhost:9876/health   # should return {"status":"healthy"}
 ```
 ## Quick Start (Kubernetes)
 
