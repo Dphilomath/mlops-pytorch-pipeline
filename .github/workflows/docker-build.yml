@@ -25,10 +25,10 @@ jobs:
 
       - name: Build and push training image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/mlops-train:latest -f docker/Dockerfile.train .
-          docker push ghcr.io/${{ github.repository_owner }}/mlops-train:latest
+          docker build -t ghcr.io/dphilomath/mlops-train:latest -f docker/Dockerfile.train .
+          docker push ghcr.io/dphilomath/mlops-train:latest
 
       - name: Build and push serving image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/mlops-serve:latest -f docker/Dockerfile.serve .
-          docker push ghcr.io/${{ github.repository_owner }}/mlops-serve:latest
+          docker build -t ghcr.io/dphilomath/mlops-serve:latest -f docker/Dockerfile.serve .
+          docker push ghcr.io/dphilomath/mlops-serve:latest
