@@ -34,10 +34,26 @@ docker compose up -d serving
 # Verify the service
 curl http://localhost:8080/health   # should return {"status":"healthy"}
 ```
+## Quick Start (Kubernetes)
+
+```bash
+# Apply all manifests with Kustomize
+kubectl apply -k k8s/
+
+# Verify the deployment
+kubectl get pods -l app=model-serving -n ml-training
+
+# Port‑forward the NodePort to your local machine (optional)
+kubectl port-forward svc/model-serving 8000:8080 -n ml-training
+# Then test:
+curl http://127.0.0.1:8000/health
+```
+
+> **Note**: The manifests use **Kustomize** (`k8s/kustomization.yaml`) to set labels, namespace, and resource ordering. If you modify resources, run `kubectl apply -k k8s/` again to rebuild the overlay.
 
 ## Repository Structure
 ```
-mlops-assgn3/
+mlops-pytorch-pipeline/
 ├─ .gitignore
 ├─ Dockerfile               # single image
 ├─ docker-compose.yml
@@ -52,7 +68,7 @@ mlops-assgn3/
 ├─ configs/
 │  ├─ training_config.yaml
 │  └─ serving_config.yaml
-└─ k8s/                     # optional Kubernetes manifests
+└─ k8s/                     # Kubernetes manifests
 ```
 
 ## Linting & CI
