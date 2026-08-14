@@ -76,27 +76,56 @@ class PredictionResponse(BaseModel):
     predicted_class: int
     probability: float
     class_name: str  # human‑readable CIFAR‑10 label
+    probabilities: dict[str, float]
+
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(file: UploadFile = File(...)):
-    """Receive an image file, run inference, and return predicted class & probability.
-    Logs a JSON event `prediction_requested` with the filename (if available).
+async def predict(
+    image: UploadFile = File(None),
+    file: UploadFile = File(None),
+):
+    """Receive an image file (under form key 'image' or 'file'), run inference,
+    and return predicted class, confidence probability, class name, and all class probabilities.
+    Logs a JSON event `prediction_requested` with the filename.
     """
+    upload = image or file
+    if upload is None:
+        raise HTTPException(status_code=400, detail="No image file provided. Use form field 'image' or 'file'.")
+
     try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        contents = await upload.read()
+        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image file")
-    input_tensor = transform(image).unsqueeze(0)
+
+    input_tensor = transform(pil_image).unsqueeze(0)
     with torch.no_grad():
         outputs = model(input_tensor)
         probs = torch.nn.functional.softmax(outputs, dim=1)
         prob, pred = probs.max(dim=1)
-    logger.info(json.dumps({"event":"prediction_requested","filename":file.filename or "<unknown>","timestamp":datetime.datetime.utcnow().isoformat()+"Z"}))
+
+    logger.info(
+        json.dumps({
+            "event": "prediction_requested",
+            "filename": upload.filename or "<unknown>",
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        })
+    )
+
     # CIFAR‑10 class labels (same order as training)
-    CIFAR10_LABELS = ["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
+    CIFAR10_LABELS = [
+        "airplane", "automobile", "bird", "cat", "deer",
+        "dog", "frog", "horse", "ship", "truck"
+    ]
+    prob_list = probs[0].tolist()
+    all_probabilities = {
+        CIFAR10_LABELS[i]: round(prob_list[i], 4)
+        for i in range(len(CIFAR10_LABELS))
+    }
+
     return PredictionResponse(
         predicted_class=pred.item(),
-        probability=prob.item(),
+        probability=round(prob.item(), 4),
         class_name=CIFAR10_LABELS[pred.item()],
+        probabilities=all_probabilities,
     )

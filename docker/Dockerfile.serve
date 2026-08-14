@@ -18,6 +18,9 @@ USER appuser
 # Copy source code and configuration (large data/checkpoints are ignored via .dockerignore)
 COPY src/ ./src/
 COPY configs/ ./configs/
+# Expose port 8080
+EXPOSE 8080
+
 # Entry point for the FastAPI server
-ENTRYPOINT ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "9876"]
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD curl -f http://localhost:9876/health || exit 1
+ENTRYPOINT ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "8080"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD curl -f http://localhost:8080/health || exit 1

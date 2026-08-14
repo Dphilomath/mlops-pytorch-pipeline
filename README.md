@@ -1,74 +1,114 @@
 # MLOps Assignment – CIFAR‑10 Classifier
 
 ## Overview
-This project implements a complete MLOps pipeline for training and serving a CIFAR‑10 image classifier. It follows the assignment rubric and runs entirely inside Docker using a **single Docker image** for both training and serving. Docker‑Compose orchestrates the workflow locally, and Kubernetes manifests are provided for deployment to a cluster.
+This project implements a complete MLOps pipeline for training and serving a CIFAR‑10 image classifier using PyTorch, Docker, and Kubernetes. It supports multi-stage container builds, reproducible training with checkpoint persistence, and scalable inference with health probes and HPA autoscaling.
 
 ```mermaid
 flowchart TD
-    subgraph Cluster[Minikube Cluster]
+    subgraph Cluster[Kubernetes Cluster: ml-training]
         subgraph Training[Training Phase]
             T[Training Job] -->|writes checkpoint| PVC[PVC: /app/checkpoints]
-            T -->|writes data| DataVol[Data Volume: /app/data]
+            T -->|reads/caches data| DataVol[Data PVC: /app/data]
+            CM1[ConfigMap: training-config] -->|mounted config| T
         end
         subgraph Serving[Serving Phase]
-            S[Model Serving Pod] -->|reads checkpoint| PVC
-            S -->|reads config| CM[ConfigMap: serving_config.yaml]
-            S -->|exposes| Service["Service (NodePort:30080)"]
+            S[Model Serving Pods (2 replicas)] -->|reads checkpoint| PVC
+            CM2[ConfigMap: training-config] -->|mounted config| S
+            S -->|exposes port 8080| Service["Service (ClusterIP: 80)"]
+            HPA[HorizontalPodAutoscaler] -->|scales| S
         end
     end
-    DockerImageTrain[Docker Image: mlops-train:latest] -->|used by| T
-    DockerImageServe[Docker Image: mlops-serve:latest] -->|used by| S
+    DockerImageTrain[Docker Image: mlops-train:v1] -->|used by| T
+    DockerImageServe[Docker Image: mlops-serve:v1] -->|used by| S
     classDef orange fill:#ffebcc,stroke:#ffa500,stroke-width:2px;
     class DockerImageTrain,DockerImageServe orange;
 ```
 
-## Quick Start (Docker Compose)
+## Quick Start (Docker)
+
 ```bash
-# Build the image and start training (runs once and exits)
-docker compose up --build training
+# 1. Build training and serving images
+docker build -f docker/Dockerfile.train -t mlops-train:v1 .
+docker build -f docker/Dockerfile.serve -t mlops-serve:v1 .
 
-# After training finishes, start the serving API
-docker compose up -d serving
+# 2. Run containerized training with mounted volumes
+docker run --rm \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/checkpoints:/app/checkpoints \
+  mlops-train:v1
 
-# Verify the service
-curl http://localhost:9876/health   # should return {"status":"healthy"}
+# 3. Run model serving
+docker run --rm -p 8080:8080 \
+  -v $(pwd)/checkpoints:/app/checkpoints \
+  mlops-serve:v1
+
+# 4. Test prediction endpoint
+curl -X POST http://localhost:8080/predict \
+  -F "image=@test_image.png"
 ```
+
 ## Quick Start (Kubernetes)
 
 ```bash
-# Apply all manifests with Kustomize
-kubectl apply -k k8s/
+# 1. Create namespace and configuration
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/pvc-data.yaml
+kubectl apply -f k8s/pvc-checkpoints.yaml
 
-# Verify the deployment
-kubectl get pods -l app=model-serving -n ml-training
+# 2. Run training Job
+kubectl apply -f k8s/training-job.yaml
 
-# Port‑forward the NodePort to your local machine (optional)
-kubectl port-forward svc/model-serving 8000:8080 -n ml-training
-# Then test:
-curl http://127.0.0.1:8000/health
+# 3. Deploy model serving and autoscaler
+kubectl apply -f k8s/serving-deployment.yaml
+kubectl apply -f k8s/serving-service.yaml
+kubectl apply -f k8s/hpa.yaml
+
+# 4. Port-forward for testing
+kubectl port-forward svc/model-serving 8080:80 -n ml-training
+
+# 5. Test health and predictions
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/predict -F "image=@test_image.png"
 ```
 
-> **Note**: The manifests use **Kustomize** (`k8s/kustomization.yaml`) to set labels, namespace, and resource ordering. If you modify resources, run `kubectl apply -k k8s/` again to rebuild the overlay.
+> **Note**: You can also deploy all manifests using Kustomize: `kubectl apply -k k8s/`
 
 ## Repository Structure
 ```
 mlops-pytorch-pipeline/
-├─ .gitignore
-├─ Dockerfile               # single image
-├─ docker-compose.yml
-├─ requirements.txt
-├─ setup.sh
-├─ README.md                # you are reading it :) 
-├─ src/
-│  ├─ dataset.py           # data loader utilities
-│  ├─ model.py             # model definition
-│  ├─ train.py             # training script
-│  └─ serve.py             # FastAPI serving app
-├─ configs/
-│  ├─ training_config.yaml
-│  └─ serving_config.yaml
-└─ k8s/                     # Kubernetes manifests
+├── README.md
+├── .gitignore
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── docker-build.yml
+├── src/
+│   ├── train.py
+│   ├── model.py
+│   ├── dataset.py
+│   └── serve.py
+├── configs/
+│   ├── training_config.yaml
+│   └── serving_config.yaml
+├── docker/
+│   ├── Dockerfile.train
+│   └── Dockerfile.serve
+├── k8s/
+│   ├── namespace.yaml
+│   ├── training-job.yaml
+│   ├── serving-deployment.yaml
+│   ├── serving-service.yaml
+│   ├── configmap.yaml
+│   ├── hpa.yaml
+│   ├── pvc-data.yaml
+│   └── pvc-checkpoints.yaml
+├── requirements/
+│   ├── train.txt
+│   └── serve.txt
+└── tests/
+    └── test_model.py
 ```
 
 ## Linting & CI
-The CI pipeline runs `flake8` and `black` on every push/PR. See `.github/workflows/ci.yml`.
+The CI pipeline runs `black`, `flake8`, and `pytest` on every push/PR. See [.github/workflows/ci.yml](file:///.github/workflows/ci.yml).

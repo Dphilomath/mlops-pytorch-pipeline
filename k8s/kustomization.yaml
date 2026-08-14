@@ -8,8 +8,8 @@ resources:
   - pvc-data.yaml           # PVC for /app/data
   - pvc-checkpoints.yaml   # PVC for /app/checkpoints
   - training-job.yaml       # Job that trains the model
-  - serving-deploy.yaml     # Deployment for the FastAPI server
-  - serving-service.yaml    # NodePort Service (exposes port 30080)
+  - serving-deployment.yaml # Deployment for the FastAPI server
+  - serving-service.yaml    # Service (exposes port 80 targeting 8080)
   - hpa.yaml                # Optional HorizontalPodAutoscaler
 
 namespace: ml-training

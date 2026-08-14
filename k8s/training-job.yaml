@@ -12,7 +12,7 @@ spec:
         command: ["python", "-m", "src.train"]
         envFrom:
         - configMapRef:
-            name: ml-training-config
+            name: training-config
         volumeMounts:
         - name: config-volume
           mountPath: /app/configs
@@ -22,8 +22,8 @@ spec:
           mountPath: /app/checkpoints
         resources:
           requests:
-            cpu: 500m
-            memory: 1Gi
+            cpu: 2000m
+            memory: 4Gi
           limits:
             cpu: 2000m
             memory: 4Gi
@@ -31,12 +31,13 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: ml-training-config
+          name: training-config
           items:
           - key: training_config.yaml
             path: training_config.yaml
       - name: data-volume
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: data-pvc
       - name: checkpoint-volume
         persistentVolumeClaim:
           claimName: checkpoint-pvc

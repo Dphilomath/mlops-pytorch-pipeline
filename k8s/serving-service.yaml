@@ -4,11 +4,10 @@ metadata:
   name: model-serving
   namespace: ml-training
 spec:
+  type: ClusterIP
   selector:
     app: model-serving
   ports:
   - protocol: TCP
-    port: 9876
-    targetPort: 9876
-    nodePort: 30080
-  type: NodePort
+    port: 80
+    targetPort: 8080

@@ -3,4 +3,5 @@ kind: Namespace
 metadata:
   name: ml-training
   labels:
+    project: mlops-pytorch-pipeline
     name: ml-training

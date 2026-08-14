@@ -23,7 +23,7 @@ services:
       dockerfile: docker/Dockerfile.serve
     container_name: serving
     ports:
-      - "9876:9876"
+      - "8080:8080"
     # command removed – ENTRYPOINT in Dockerfile sets the port
 
     volumes:
