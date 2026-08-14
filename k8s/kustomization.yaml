@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Resources are applied in the order they appear below
+resources:
+  - namespace.yaml          # creates the ml-training namespace
+  - configmap.yaml          # ConfigMap used by training and serving
+  - pvc-data.yaml           # PVC for /app/data
+  - pvc-checkpoints.yaml   # PVC for /app/checkpoints
+  - training-job.yaml       # Job that trains the model
+  - serving-deploy.yaml     # Deployment for the FastAPI server
+  - serving-service.yaml    # NodePort Service (exposes port 30080)
+  - hpa.yaml                # Optional HorizontalPodAutoscaler
+
+namespace: ml-training
+
+commonLabels:
+  project: mlops-pytorch-pipeline
