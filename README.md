@@ -13,7 +13,7 @@ flowchart TD
         subgraph Serving[Serving Phase]
             S[Model Serving Pod] -->|reads checkpoint| PVC
             S -->|reads config| CM[ConfigMap: serving_config.yaml]
-            S -->|exposes| Service["Service (NodePort:30080)"]
+            S -->|exposes| Service["Service (NodePort:30000)"]
         end
     end
     DockerImageTrain[Docker Image: mlops-train:latest] -->|used by| T
