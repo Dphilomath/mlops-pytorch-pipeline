@@ -6,17 +6,21 @@ This project implements a complete MLOps pipeline for training and serving a CIF
 ## Architecture
 ```mermaid
 flowchart TD
-    subgraph DockerImage[Docker Image: mlops-assgn3:latest]
-        A[src/]
-        B[configs/]
-        C[requirements.txt]
+    subgraph Cluster[Minikube Cluster]
+        subgraph Training[Training Phase]
+            T[Training Job] -->|writes checkpoint| PVC[PVC: /app/checkpoints]
+            T -->|writes data| DataVol[Data Volume: /app/data]
+        end
+        subgraph Serving[Serving Phase]
+            S[Model Serving Pod] -->|reads checkpoint| PVC
+            S -->|reads config| CM[ConfigMap: serving_config.yaml]
+            S -->|exposes| Service["Service (NodePort:30080)"]
+        end
     end
-    DockerCompose -->|training| DockerImage
-    DockerCompose -->|serving| DockerImage
-    DockerImage -->|mount| data_volume[(/app/data)]
-    DockerImage -->|mount| ckpt_volume[(/app/checkpoints)]
+    DockerImage[Docker Image: mlops-assgn3:latest] -->|used by| T
+    DockerImage -->|used by| S
     classDef orange fill:#ffebcc,stroke:#ffa500,stroke-width:2px;
-    class DockerCompose orange;
+    class DockerImage orange;
 ```
 
 ## Quick Start (Docker Compose)
