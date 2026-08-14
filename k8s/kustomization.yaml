@@ -14,5 +14,8 @@ resources:
 
 namespace: ml-training
 
-commonLabels:
-  project: mlops-pytorch-pipeline
+labels:
+  - pairs:
+      project: mlops-pytorch-pipeline
+    includeSelectors: true
+    includeTemplates: true
