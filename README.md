@@ -3,7 +3,6 @@
 ## Overview
 This project implements a complete MLOps pipeline for training and serving a CIFAR‑10 image classifier. It follows the assignment rubric and runs entirely inside Docker using a **single Docker image** for both training and serving. Docker‑Compose orchestrates the workflow locally, and Kubernetes manifests are provided for deployment to a cluster.
 
-## Architecture
 ```mermaid
 flowchart TD
     subgraph Cluster[Minikube Cluster]
@@ -17,10 +16,10 @@ flowchart TD
             S -->|exposes| Service["Service (NodePort:30080)"]
         end
     end
-    DockerImage[Docker Image: mlops-assgn3:latest] -->|used by| T
-    DockerImage -->|used by| S
+    DockerImageTrain[Docker Image: mlops-train:latest] -->|used by| T
+    DockerImageServe[Docker Image: mlops-serve:latest] -->|used by| S
     classDef orange fill:#ffebcc,stroke:#ffa500,stroke-width:2px;
-    class DockerImage orange;
+    class DockerImageTrain,DockerImageServe orange;
 ```
 
 ## Quick Start (Docker Compose)
