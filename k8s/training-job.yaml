@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
       - name: training
-        image: mlops-pytorch-pipeline-train:latest
+        image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/mlops-train:latest
         command: ["python", "-m", "src.train"]
         envFrom:
         - configMapRef:

@@ -10,4 +10,5 @@ spec:
   - protocol: TCP
     port: 9876
     targetPort: 9876
-  type: ClusterIP
+    nodePort: 8141
+  type: NodePort

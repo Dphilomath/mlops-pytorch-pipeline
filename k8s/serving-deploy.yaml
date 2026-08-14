@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: serving
-        image: mlops-pytorch-pipeline-serve:latest
+        image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/mlops-serve:latest
         ports:
         - containerPort: 9876
         envFrom:
