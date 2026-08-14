@@ -75,6 +75,7 @@ def health():
 class PredictionResponse(BaseModel):
     predicted_class: int
     probability: float
+    class_name: str  # human‑readable CIFAR‑10 label
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
@@ -92,4 +93,10 @@ async def predict(file: UploadFile = File(...)):
         probs = torch.nn.functional.softmax(outputs, dim=1)
         prob, pred = probs.max(dim=1)
     logger.info(json.dumps({"event":"prediction_requested","filename":file.filename or "<unknown>","timestamp":datetime.datetime.utcnow().isoformat()+"Z"}))
-    return PredictionResponse(predicted_class=pred.item(), probability=prob.item())
+    # CIFAR‑10 class labels (same order as training)
+    CIFAR10_LABELS = ["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
+    return PredictionResponse(
+        predicted_class=pred.item(),
+        probability=prob.item(),
+        class_name=CIFAR10_LABELS[pred.item()],
+    )

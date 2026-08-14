@@ -20,6 +20,12 @@ data:
       checkpoint_dir: /app/checkpoints
       model_name: classifier_v1.pt
   serving_config.yaml: |
+    model:
+      architecture: resnet18
+      num_classes: 10
+    output:
+      checkpoint_dir: /app/checkpoints
+      model_name: classifier_v1.pt
     model_path: /app/checkpoints/classifier_v1.pt
     batch_size: 1
     port: 8080
