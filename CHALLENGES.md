@@ -100,15 +100,67 @@ This document records the major engineering and operational challenges encounter
 ## 6. Non-Standard Port Binding & Horizontal Pod Autoscaler (HPA) Constraints
 
 * **Symptom / Problem:**  
-  Requirements specified using non-standard ports (`9876` / `9877`) and establishing container autoscaling. Initial K8s deployment manifests used standard port 8080 and lacked container resource declarations.
+  Requirements specified aligning container ports and establishing container autoscaling. Initial K8s deployment manifests lacked explicit container resource declarations.
 
 * **Root Cause Analysis:**  
   Kubernetes HPA requires explicit resource `requests` (CPU and Memory) on target containers to compute utilization metrics; missing specs cause HPA to remain in `Unknown` state.
 
 * **Resolution:**  
-  - Updated `serving-deploy.yaml` containerPort and `serving-service.yaml` targetPort to **`9876`**.
-  - Added container resource `requests` (CPU 250m, RAM 512Mi) and `limits` (CPU 1000m, RAM 2Gi) in deployment manifests.
-  - Configured `k8s/hpa.yaml` with a 80% CPU target utilization limit (min 1, max 3 replicas).
+  - Updated `serving-deployment.yaml` containerPort and `serving-service.yaml` targetPort to standard port **`8080`** and service port **`80`**.
+  - Added container resource `requests` (CPU 500m, RAM 1Gi) and `limits` (CPU 1000m, RAM 2Gi) in deployment manifests.
+  - Configured `k8s/hpa.yaml` with an 80% CPU target utilization limit (min 1, max 3 replicas).
+
+---
+
+## 7. CIFAR-10 Upstream Server Throttling & Mirror Engine
+
+* **Symptom / Problem:**  
+  During containerized training on Kubernetes, the dataset download step stalled for over **42 minutes** (`100% [42:54, 66 KB/s]`), severely bottlenecking pipeline initiation.
+
+* **Root Cause Analysis:**  
+  The default `torchvision.datasets.CIFAR10` downloader points to a single university host (`cs.toronto.edu`) that aggressively rate-limits incoming traffic and lacks chunked streaming or mirror failovers.
+
+* **Resolution:**  
+  Implemented `ensure_cifar10_dataset()` in `src/dataset.py`:
+  - Added multi-mirror failover supporting `cave.cs.toronto.edu` and cloud mirrors.
+  - Added `CIFAR10_MIRROR_URL` environment variable support for private S3/GCS buckets.
+  - Implemented 1 MB chunked streaming with live progress reporting and automatic `.tar.gz` extraction.
+  - Enforced a persistent volume check that skips network calls if `/app/data/cifar-10-batches-py` exists.
+  **Result:** Fast resilient downloads with immediate 0-second cache hits on persistent storage.
+
+---
+
+## 8. Ingress Subpath Routing & Path Rewriting
+
+* **Symptom / Problem:**  
+  Serving model predictions under a public subpath (`https://opssynergy.isroot.in/ml-training/*`) resulted in `404 Not Found` or `502 Bad Gateway` when requests reached the FastAPI backend.
+
+* **Root Cause Analysis:**  
+  FastAPI registers endpoints at `/health`, `/predict`, and `/docs`. Forwarding `/ml-training/health` without path rewriting caused FastAPI to receive the unstripped prefix `/ml-training/health`.
+
+* **Resolution:**  
+  Created `k8s/ingress.yaml` utilizing NGINX Ingress regex capture and rewrite annotations:
+  ```yaml
+  nginx.ingress.kubernetes.io/use-regex: "true"
+  nginx.ingress.kubernetes.io/rewrite-target: /$2
+  ```
+  Path pattern `/ml-training(/|$)(.*)` correctly forwards requests to backend root routes (`/health`, `/predict`, `/docs`).
+  **Result:** Clean HTTPS public ingress routing with automated Let's Encrypt certificates managed by cert-manager.
+
+---
+
+## 9. CI Test Discovery & Python Module Resolution
+
+* **Symptom / Problem:**  
+  Running `pytest tests/ -v` inside the GitHub Actions CI workflow threw `ModuleNotFoundError: No module named 'src'`.
+
+* **Root Cause Analysis:**  
+  Pytest does not automatically inject the repository root into `sys.path` during test module collection in isolated CI environments.
+
+* **Resolution:**  
+  - Created `pytest.ini` with `pythonpath = .` and `testpaths = tests`.
+  - Updated `.github/workflows/ci.yml` to invoke tests via `python -m pytest tests/ -v`.
+  **Result:** Seamless unit test discovery and 100% passing test execution in CI.
 
 ---
 
@@ -121,4 +173,7 @@ This document records the major engineering and operational challenges encounter
 | **OOM Kill (exit 137)** | Container killed after `Starting epoch 1/10` | `num_workers` default not overridden — workers tripled RAM usage | Fixed default in `get_dataloaders()` signature | **~375 MiB** peak memory, training completes |
 | **Inference Server** | `FileNotFoundError` crash loop | Race condition before checkpoint output | Added retry/watch loop in `serve.py` | Reliable startup sequence |
 | **K8s Storage** | Checkpoint lost after training | `emptyDir` volume lifecycle limits | Created shared `checkpoint-pvc` PVC | Shared persistent model storage |
-| **K8s Autoscaling** | HPA inactive | Missing container resource requests/limits | Added CPU/Mem limits & port 9876 alignment | Active auto-scaling ready |
+| **K8s Autoscaling** | HPA inactive | Missing container resource requests/limits | Added CPU/Mem limits & port 8080 alignment | Active auto-scaling ready |
+| **Dataset Download** | 42-minute download stall | Throttled single university server | Multi-mirror engine + chunked streaming | Resilient downloads + instant PVC cache |
+| **Public Ingress** | 404/502 on subpath routing | FastAPI unstripped subpath mismatch | NGINX regex rewrite target (`/$2`) | Clean `opssynergy.isroot.in/ml-training/*` ingress |
+| **CI Discovery** | `ModuleNotFoundError: src` | `sys.path` missing repo root in CI | Added `pytest.ini` with `pythonpath = .` | 100% CI automated test pass |

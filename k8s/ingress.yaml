@@ -22,10 +22,17 @@ spec:
   - host: opssynergy.isroot.in
     http:
       paths:
-      - path: /ml-training(/|$)(.*)
+      - path: /ml-training/(predict|health|docs|openapi.json)(/|$)(.*)
         pathType: ImplementationSpecific
         backend:
           service:
             name: model-serving
+            port:
+              number: 80
+      - path: /ml-training(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: web-ui
             port:
               number: 80
