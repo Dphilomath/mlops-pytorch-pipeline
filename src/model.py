@@ -1,6 +1,7 @@
 import torch
 from torchvision import models
 
+
 def get_model(architecture: str = "resnet18", num_classes: int = 10):
     """Return a torchvision model with the given architecture and number of classes.
 
@@ -16,7 +17,9 @@ def get_model(architecture: str = "resnet18", num_classes: int = 10):
         "vgg16": models.vgg16,
     }
     if architecture not in arch_map:
-        raise ValueError(f"Unsupported architecture '{architecture}'. Supported: {list(arch_map.keys())}")
+        raise ValueError(
+            f"Unsupported architecture '{architecture}'. Supported: {list(arch_map.keys())}"
+        )
     model = arch_map[architecture](weights=None)
     # Replace the final fully‑connected layer to match the number of classes
     if "resnet" in architecture:

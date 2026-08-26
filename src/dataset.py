@@ -5,29 +5,33 @@ The implementation uses torchvision's CIFAR‑10 dataset as a
 placeholder - replace with your own data source as needed.
 """
 
-# pyrefly: ignore [missing-import]
-import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
+
 def get_transforms(train: bool = True) -> transforms.Compose:
     if train:
-        return transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(32, padding=4),
+        return transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomCrop(32, padding=4),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.4914, 0.4822, 0.4465],
+                    std=[0.2470, 0.2435, 0.2616],
+                ),
+            ]
+        )
+    return transforms.Compose(
+        [
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.4914, 0.4822, 0.4465],
                 std=[0.2470, 0.2435, 0.2616],
             ),
-        ])
-    return transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.4914, 0.4822, 0.4465],
-            std=[0.2470, 0.2435, 0.2616],
-        ),
-    ])
+        ]
+    )
+
 
 def get_dataloaders(
     data_dir: str,
@@ -52,7 +56,7 @@ def get_dataloaders(
         shuffle=True,
         num_workers=num_workers,
         pin_memory=False,
-        multiprocessing_context='spawn' if num_workers > 0 else None,
+        multiprocessing_context="spawn" if num_workers > 0 else None,
         persistent_workers=num_workers > 0,
     )
     val_loader = DataLoader(
@@ -61,7 +65,7 @@ def get_dataloaders(
         shuffle=False,
         num_workers=num_workers,
         pin_memory=False,
-        multiprocessing_context='spawn' if num_workers > 0 else None,
+        multiprocessing_context="spawn" if num_workers > 0 else None,
         persistent_workers=num_workers > 0,
     )
     return train_loader, val_loader
