@@ -5,21 +5,21 @@ This project implements a complete MLOps pipeline for training and serving a CIF
 
 ```mermaid
 flowchart TD
-    subgraph Cluster[Kubernetes Cluster: ml-training]
-        subgraph Training[Training Phase]
-            T[Training Job] -->|writes checkpoint| PVC[PVC: /app/checkpoints]
-            T -->|reads/caches data| DataVol[Data PVC: /app/data]
-            CM1[ConfigMap: training-config] -->|mounted config| T
+    subgraph Cluster["Kubernetes Cluster: ml-training"]
+        subgraph Training["Training Phase"]
+            T["Training Job"] -->|writes checkpoint| PVC["PVC: /app/checkpoints"]
+            T -->|reads/caches data| DataVol["Data PVC: /app/data"]
+            CM1["ConfigMap: training-config"] -->|mounted config| T
         end
-        subgraph Serving[Serving Phase]
-            S[Model Serving Pods (2 replicas)] -->|reads checkpoint| PVC
-            CM2[ConfigMap: training-config] -->|mounted config| S
+        subgraph Serving["Serving Phase"]
+            S["Model Serving Pods (2 replicas)"] -->|reads checkpoint| PVC
+            CM2["ConfigMap: training-config"] -->|mounted config| S
             S -->|exposes port 8080| Service["Service (ClusterIP: 80)"]
-            HPA[HorizontalPodAutoscaler] -->|scales| S
+            HPA["HorizontalPodAutoscaler"] -->|scales| S
         end
     end
-    DockerImageTrain[Docker Image: mlops-train:v1] -->|used by| T
-    DockerImageServe[Docker Image: mlops-serve:v1] -->|used by| S
+    DockerImageTrain["Docker Image: mlops-train:v1"] -->|used by| T
+    DockerImageServe["Docker Image: mlops-serve:v1"] -->|used by| S
     classDef orange fill:#ffebcc,stroke:#ffa500,stroke-width:2px;
     class DockerImageTrain,DockerImageServe orange;
 ```
