@@ -10,6 +10,7 @@ resources:
   - training-job.yaml       # Job that trains the model
   - serving-deployment.yaml # Deployment for the FastAPI server
   - serving-service.yaml    # Service (exposes port 80 targeting 8080)
+  - ingress.yaml            # Ingress for opssynergy.isroot.in/ml-training/*
   - hpa.yaml                # Optional HorizontalPodAutoscaler
 
 namespace: ml-training

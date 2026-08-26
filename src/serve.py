@@ -67,6 +67,21 @@ transform = transforms.Compose([
     ),
 ])
 
+@app.get("/")
+def root():
+    """Root endpoint providing service status and endpoint links."""
+    return {
+        "service": "mlops-cifar10-serving",
+        "status": "online",
+        "endpoints": {
+            "health": "/health",
+            "predict": "/predict",
+            "docs": "/docs",
+            "openapi": "/openapi.json",
+        },
+    }
+
+
 @app.get("/health")
 def health():
     """Health check endpoint returning a simple JSON status."""

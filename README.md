@@ -99,6 +99,7 @@ mlops-pytorch-pipeline/
 │   ├── training-job.yaml
 │   ├── serving-deployment.yaml
 │   ├── serving-service.yaml
+│   ├── ingress.yaml
 │   ├── configmap.yaml
 │   ├── hpa.yaml
 │   ├── pvc-data.yaml
