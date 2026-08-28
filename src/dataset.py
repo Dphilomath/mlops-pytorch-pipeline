@@ -88,34 +88,66 @@ def ensure_cifar10_dataset(data_dir: str):
         print("Extraction complete.", flush=True)
 
 
-def get_transforms(train: bool = True) -> transforms.Compose:
+def get_transforms(
+    train: bool = True, strategy: str = "strategy_2"
+) -> transforms.Compose:
+    transform_list = []
+
+    # Both transfer learning strategies (strategy_2, strategy_3) resize 32x32 images to 224x224
+    if strategy in ["strategy_2", "strategy_3"]:
+        transform_list.append(transforms.Resize(224))
+
     if train:
-        return transforms.Compose(
-            [
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomCrop(32, padding=4),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.4914, 0.4822, 0.4465],
-                    std=[0.2470, 0.2435, 0.2616],
-                ),
-            ]
+        if strategy == "strategy_3":
+            # Advanced data augmentations for tuned transfer learning (strategy_3)
+            transform_list.extend(
+                [
+                    transforms.RandomHorizontalFlip(),
+                    transforms.RandomRotation(15),
+                    transforms.ColorJitter(
+                        brightness=0.2, contrast=0.2, saturation=0.2
+                    ),
+                ]
+            )
+        else:
+            # Baseline data augmentation
+            transform_list.extend(
+                [
+                    transforms.RandomHorizontalFlip(),
+                    transforms.RandomCrop(
+                        224 if strategy in ["strategy_2", "strategy_3"] else 32,
+                        padding=4,
+                    ),
+                ]
+            )
+
+    transform_list.append(transforms.ToTensor())
+
+    if strategy in ["strategy_2", "strategy_3"]:
+        # Standard ImageNet normalization for transfer learning models
+        transform_list.append(
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            )
         )
-    return transforms.Compose(
-        [
-            transforms.ToTensor(),
+    else:
+        # Standard CIFAR-10 normalization for baseline training from scratch
+        transform_list.append(
             transforms.Normalize(
                 mean=[0.4914, 0.4822, 0.4465],
                 std=[0.2470, 0.2435, 0.2616],
-            ),
-        ]
-    )
+            )
+        )
+
+    return transforms.Compose(transform_list)
 
 
 def get_dataloaders(
     data_dir: str,
     batch_size: int = 64,
     num_workers: int = 1,
+    strategy: str = "strategy_2",
 ) -> tuple[DataLoader, DataLoader]:
     ensure_cifar10_dataset(data_dir)
 
@@ -123,13 +155,13 @@ def get_dataloaders(
         root=data_dir,
         train=True,
         download=False,
-        transform=get_transforms(train=True),
+        transform=get_transforms(train=True, strategy=strategy),
     )
     val_dataset = datasets.CIFAR10(
         root=data_dir,
         train=False,
         download=False,
-        transform=get_transforms(train=False),
+        transform=get_transforms(train=False, strategy=strategy),
     )
     train_loader = DataLoader(
         train_dataset,

@@ -13,6 +13,8 @@ resources:
   - web-ui-deployment.yaml  # Deployment for the static Nginx Web UI
   - web-ui-service.yaml     # Service for the Web UI (port 80)
   - web-ui-configmap.yaml   # ConfigMap containing the Web UI index.html
+  - mlflow-deployment.yaml  # Deployment for the MLflow tracking server
+  - mlflow-service.yaml     # Service for MLflow (port 5000)
   - ingress.yaml            # Ingress for opssynergy.isroot.in/ml-training/*
   - hpa.yaml                # Optional HorizontalPodAutoscaler
 

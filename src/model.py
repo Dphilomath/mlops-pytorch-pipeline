@@ -2,12 +2,15 @@ import torch
 from torchvision import models
 
 
-def get_model(architecture: str = "resnet18", num_classes: int = 10):
-    """Return a torchvision model with the given architecture and number of classes.
+def get_model(
+    architecture: str = "resnet18", num_classes: int = 10, strategy: str = "strategy_2"
+):
+    """Return a torchvision model adapted for the given training strategy.
 
     Args:
         architecture: Name of the torchvision model (e.g., "resnet18", "vgg16").
         num_classes: Number of output classes for the classifier.
+        strategy: Optimization strategy ("strategy_2" for baseline, "strategy_3" for tuned).
     """
     # Map supported architectures to torchvision constructors
     arch_map = {
@@ -20,7 +23,15 @@ def get_model(architecture: str = "resnet18", num_classes: int = 10):
         raise ValueError(
             f"Unsupported architecture '{architecture}'. Supported: {list(arch_map.keys())}"
         )
-    model = arch_map[architecture](weights=None)
+
+    # Both strategy_2 and strategy_3 use pre-trained ImageNet weights (transfer learning)
+    if strategy in ["strategy_2", "strategy_3"]:
+        weights = "DEFAULT"
+    else:
+        weights = None
+
+    model = arch_map[architecture](weights=weights)
+
     # Replace the final fully‑connected layer to match the number of classes
     if "resnet" in architecture:
         in_features = model.fc.in_features
@@ -28,4 +39,5 @@ def get_model(architecture: str = "resnet18", num_classes: int = 10):
     elif "vgg" in architecture:
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = torch.nn.Linear(in_features, num_classes)
+
     return model

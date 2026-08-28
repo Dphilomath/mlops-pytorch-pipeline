@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: ml-training
+  labels:
+    project: mlops-pytorch-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+      project: mlops-pytorch-pipeline
+  template:
+    metadata:
+      labels:
+        app: mlflow
+        project: mlops-pytorch-pipeline
+    spec:
+      containers:
+      - name: mlflow
+        image: ghcr.io/mlflow/mlflow:v2.12.1
+        command:
+        - mlflow
+        - server
+        - --host
+        - 0.0.0.0
+        - --port
+        - "5000"
+        - --backend-store-uri
+        - sqlite:///app/mlflow.db
+        - --default-artifact-root
+        - /app/mlruns
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: mlflow-data
+          mountPath: /app
+      restartPolicy: Always
+      volumes:
+      - name: mlflow-data
+        emptyDir: {}

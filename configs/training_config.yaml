@@ -7,6 +7,9 @@ data:
   dataset: cifar10
 
 training:
+  strategy: "baseline"  # Options: baseline, transfer_learning, custom_resnet, augmented_sgd
+  optimizer: "adam"     # Options: adam, sgd
+  scheduler: "none"     # Options: none, cosine
   epochs: 10
   batch_size: 64
   learning_rate: 0.001

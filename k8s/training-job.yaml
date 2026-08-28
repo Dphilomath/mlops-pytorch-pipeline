@@ -13,6 +13,9 @@ spec:
         envFrom:
         - configMapRef:
             name: training-config
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: http://mlflow:5000
         volumeMounts:
         - name: config-volume
           mountPath: /app/configs

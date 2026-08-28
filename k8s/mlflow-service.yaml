@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: ml-training
+  labels:
+    project: mlops-pytorch-pipeline
+spec:
+  type: ClusterIP
+  selector:
+    app: mlflow
+    project: mlops-pytorch-pipeline
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
