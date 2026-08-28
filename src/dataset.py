@@ -146,7 +146,7 @@ def get_transforms(
 def get_dataloaders(
     data_dir: str,
     batch_size: int = 64,
-    num_workers: int = 1,
+    num_workers: int = 0,
     strategy: str = "strategy_2",
 ) -> tuple[DataLoader, DataLoader]:
     ensure_cifar10_dataset(data_dir)

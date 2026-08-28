@@ -104,7 +104,13 @@ def main():
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if tracking_uri:
         mlflow.set_tracking_uri(tracking_uri)
-    mlflow.set_experiment("cifar10-optimization")
+    try:
+        mlflow.set_experiment("cifar10-optimization")
+    except Exception:
+        import time
+
+        time.sleep(2)
+        mlflow.set_experiment("cifar10-optimization")
 
     # Use all available CPU cores for PyTorch linear algebra ops
     torch.set_num_threads(2)
