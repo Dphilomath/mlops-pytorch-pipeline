@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-training-s3
+  namespace: ml-training
+  labels:
+    project: mlops-pytorch-pipeline
+spec:
+  template:
+    metadata:
+      labels:
+        project: mlops-pytorch-pipeline
+    spec:
+      containers:
+      - name: training
+        image: ghcr.io/dphilomath/mlops-train:latest
+        command: ["python", "-m", "src.train"]
+        envFrom:
+        - configMapRef:
+            name: training-config
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: http://mlflow:5000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/configs
+        - name: data-volume
+          mountPath: /app/data
+        - name: checkpoint-volume
+          mountPath: /app/checkpoints
+        resources:
+          requests:
+            cpu: 2000m
+            memory: 4Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+      restartPolicy: Never
+      volumes:
+      - name: config-volume
+        configMap:
+          name: training-config
+          items:
+          - key: training_config_s3.yaml
+            path: training_config.yaml
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: data-pvc
+      - name: checkpoint-volume
+        persistentVolumeClaim:
+          claimName: checkpoint-pvc

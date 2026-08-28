@@ -4,7 +4,7 @@ metadata:
   name: training-config
   namespace: ml-training
 data:
-  training_config.yaml: |
+  training_config_s2.yaml: |
     model:
       architecture: resnet18
       num_classes: 10
@@ -12,16 +12,34 @@ data:
       data_dir: /app/data
       dataset: cifar10
     training:
-      strategy: "strategy_2"  # Options: strategy_2, strategy_3
-      optimizer: "adam"       # Options: adam, sgd
-      scheduler: "none"       # Options: none, cosine
+      strategy: "strategy_2"
+      optimizer: "adam"
+      scheduler: "none"
       epochs: 10
       batch_size: 64
       learning_rate: 0.001
       early_stopping_patience: 3
     output:
       checkpoint_dir: /app/checkpoints
-      model_name: classifier_v1.pt
+      model_name: classifier_s2.pt
+  training_config_s3.yaml: |
+    model:
+      architecture: resnet18
+      num_classes: 10
+    data:
+      data_dir: /app/data
+      dataset: cifar10
+    training:
+      strategy: "strategy_3"
+      optimizer: "sgd"
+      scheduler: "cosine"
+      epochs: 10
+      batch_size: 64
+      learning_rate: 0.1
+      early_stopping_patience: 3
+    output:
+      checkpoint_dir: /app/checkpoints
+      model_name: classifier_s3.pt
   serving_config.yaml: |
     model:
       architecture: resnet18

@@ -7,7 +7,8 @@ resources:
   - configmap.yaml          # ConfigMap used by training and serving
   - pvc-data.yaml           # PVC for /app/data
   - pvc-checkpoints.yaml   # PVC for /app/checkpoints
-  - training-job.yaml       # Job that trains the model
+  - training-job-s2.yaml    # Job for training Strategy 2 (Adam baseline)
+  - training-job-s3.yaml    # Job for training Strategy 3 (SGD tuned)
   - serving-deployment.yaml # Deployment for the FastAPI server
   - serving-service.yaml    # Service (exposes port 80 targeting 8080)
   - web-ui-deployment.yaml  # Deployment for the static Nginx Web UI
