@@ -133,16 +133,17 @@ def main():
     # Configure optimizer based on training config
     opt_type = config["training"].get("optimizer", "adam").lower()
     lr = config["training"]["learning_rate"]
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
     if opt_type == "sgd":
         optimizer = torch.optim.SGD(
-            model.parameters(),
+            trainable_params,
             lr=lr,
             momentum=0.9,
             weight_decay=5e-4,
         )
     else:
         optimizer = torch.optim.Adam(
-            model.parameters(),
+            trainable_params,
             lr=lr,
         )
 

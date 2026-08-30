@@ -37,7 +37,12 @@ def get_model(
 
     model = arch_map[architecture](weights=weights)
 
-    # Replace the final fully‑connected layer to match the number of classes
+    if weights is not None:
+        # Freeze backbone parameters to retain ImageNet representations and eliminate deep backprop on CPU
+        for param in model.parameters():
+            param.requires_grad = False
+
+    # Replace the final fully‑connected layer to match the number of classes (trainable)
     if "resnet" in architecture:
         in_features = model.fc.in_features
         model.fc = torch.nn.Linear(in_features, num_classes)
