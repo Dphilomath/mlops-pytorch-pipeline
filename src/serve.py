@@ -36,6 +36,7 @@ with open(config_path) as f:
 model = get_model(
     architecture=cfg["model"]["architecture"],
     num_classes=cfg["model"]["num_classes"],
+    strategy="baseline",
 )
 
 # Determine checkpoint location
