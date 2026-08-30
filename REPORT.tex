@@ -1,164 +1,156 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{enumitem}
-\usepackage{titlesec}
 \usepackage{fancyhdr}
-\usepackage{amsmath}
+\usepackage{microtype}
+
+\setlength{\headheight}{14.5pt}
 
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={MLOps Assignment 3 Report - da25g510},
-    pdfpagemode=FullScreen,
+    urlcolor=blue,
+    pdftitle={DA5402W Assignment 3 Report - da25g510}
 }
 
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{Course: DA5402W | Roll No: da25g510}
-\lhead{Assignment 3: MLOps PyTorch Pipeline}
+\rhead{Roll No: da25g510 | DA5402W}
+\lhead{Assignment 3 Submission Report}
 \rfoot{Page \thepage}
 
-\definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.96,0.96,0.96}
 
 \lstdefinestyle{mystyle}{
     backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
     numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
     basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false,         
     breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
     numbers=left,                    
     numbersep=5pt,                  
     showspaces=false,                
     showstringspaces=false,
-    showtabs=false,                  
     tabsize=2
 }
 \lstset{style=mystyle}
 
-\title{\textbf{DA5402W: MLOps \& Infrastructure for Machine Learning}\\
+\title{\textbf{DA5402W: MLOps Lab}\\
 \large Assignment 3: Deploying PyTorch ML Workloads with Docker \& Kubernetes}
-\author{\textbf{Student Roll Number:} \texttt{da25g510}}
-\date{\textbf{Submission Date:} August 30, 2026}
+\author{\textbf{Name / Roll Number:} \texttt{da25g510}}
+\date{August 30, 2026}
 
 \begin{document}
 
 \maketitle
 
-\hrule
-\vspace{0.5em}
+\vspace{-1em}
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{0.3em}
 \noindent\textbf{GitHub Repository:} \url{https://github.com/Dphilomath/mlops-pytorch-pipeline} \\
-\textbf{Pull Request Link:} \url{https://github.com/Dphilomath/mlops-pytorch-pipeline/pull/5} \\
-\textbf{Live Web UI Dashboard:} \url{https://opssynergy.isroot.in/ml-training/} \\
-\textbf{Live Prediction Endpoint:} \texttt{POST https://opssynergy.isroot.in/ml-training/predict} \\
-\textbf{Live MLflow Tracking Server:} \url{https://opssynergy.isroot.in/ml-training/mlflow/}
-\vspace{0.5em}
-\hrule
+\textbf{Pull Request (\texttt{wip} $\rightarrow$ \texttt{master}):} \url{https://github.com/Dphilomath/mlops-pytorch-pipeline/pull/5} \\
+\textbf{Live Web App:} \url{https://opssynergy.isroot.in/ml-training/} \\
+\textbf{Prediction Endpoint:} \texttt{POST https://opssynergy.isroot.in/ml-training/predict} \\
+\textbf{MLflow Dashboard:} \url{https://opssynergy.isroot.in/ml-training/mlflow/}
+\vspace{0.3em}
+\noindent\rule{\textwidth}{0.4pt}
 
-\section{Executive Summary}
-This project delivers a complete, production-grade MLOps pipeline for training, containerizing, orchestrating, and serving a CIFAR-10 image classification model. The system integrates:
+\section{Introduction \& Project Overview}
+For this assignment, I built an end-to-end MLOps pipeline to train, package, and serve a CIFAR-10 image classifier. The project goes through the complete deployment workflow: structuring a clean Git repository with CI automation, creating lightweight multi-stage Docker images, running containerized training on Kubernetes using Jobs with persistent storage, and serving real-time predictions behind an Nginx Ingress and Horizontal Pod Autoscaler.
+
+Along the way, I also set up a centralized MLflow server to track loss/accuracy curves and register model checkpoints, as well as a small web UI to easily upload and test image predictions.
+
+\section{Implementation Details}
+
+\subsection{1. Model Architecture \& Transfer Learning}
+Initially, I trained a basic CNN from scratch on CIFAR-10, but on a CPU-bound VM, training took a long time and accuracy plateaued under 45\% after 10 epochs. 
+
+To improve both speed and accuracy, I switched to \textbf{Transfer Learning} using torchvision's pre-trained \textbf{ResNet-18} (\texttt{weights="DEFAULT"}).
 \begin{itemize}[noitemsep]
-    \item \textbf{PyTorch Transfer Learning}: ResNet-18 initialized with ImageNet pre-trained weights and fine-tuned for CIFAR-10.
-    \item \textbf{Docker Multi-Stage Builds}: Optimized CPU-only container images with non-root security enforcement and built-in healthchecks.
-    \item \textbf{Kubernetes Orchestration}: Dedicated \texttt{ml-training} namespace, persistent volume caching for datasets and checkpoints, batch training \texttt{Job}, declarative \texttt{ConfigMap}s, and autoscaling model serving \texttt{Deployment} with Horizontal Pod Autoscaler (HPA).
-    \item \textbf{Production Additions}: Centralized MLflow experiment tracking and model registry, Nginx SSL/TLS Ingress subpath routing, and an interactive glassmorphic Web UI.
+    \item \textbf{Model Adaptation (\texttt{src/model.py})}: I loaded ResNet-18 and replaced its final classification head (\texttt{model.fc = nn.Linear(512, 10)}) to output logits for CIFAR-10's 10 classes.
+    \item \textbf{Data Augmentation \& Normalization (\texttt{src/dataset.py})}: Images are resized to $64 \times 64$ to balance feature quality with CPU training speed. I applied standard ImageNet normalization ($\text{mean}=[0.485, 0.456, 0.406], \text{std}=[0.229, 0.224, 0.225]$) along with random horizontal flips, mild rotations, and color jitter to prevent overfitting.
+    \item \textbf{Optimization (\texttt{src/train.py})}: I used SGD with momentum (0.9), weight decay ($5\times 10^{-4}$), and a Cosine Annealing learning rate schedule starting at $\text{lr}=0.1$. This reached \textbf{77.26\% validation accuracy in the very first epoch}, quickly climbing above 85\% in subsequent epochs.
 \end{itemize}
 
-\section{System Architecture \& Implementation Breakdown}
-
-\subsection{Part A: Repository \& CI/CD Setup}
-The codebase adheres strictly to the required directory structure:
+\subsection{2. Docker Containerization}
+I created two separate multi-stage Dockerfiles:
 \begin{itemize}[noitemsep]
-    \item \texttt{src/}: Contains \texttt{model.py}, \texttt{dataset.py}, \texttt{train.py}, and \texttt{serve.py}.
-    \item \texttt{configs/}: Declarative YAML configuration files (\texttt{training\_config.yaml}, \texttt{serving\_config.yaml}).
-    \item \texttt{docker/}: Multi-stage Dockerfiles (\texttt{Dockerfile.train}, \texttt{Dockerfile.serve}).
-    \item \texttt{k8s/}: Kubernetes manifests (\texttt{namespace.yaml}, \texttt{configmap.yaml}, \texttt{training-job.yaml}, \texttt{serving-deployment.yaml}, \texttt{serving-service.yaml}, \texttt{hpa.yaml}, \texttt{ingress.yaml}, \texttt{kustomization.yaml}).
-    \item \texttt{.github/workflows/}: CI pipeline running automated linting (\texttt{black}, \texttt{flake8}) and unit testing (\texttt{pytest}).
+    \item \textbf{\texttt{docker/Dockerfile.train}}: A multi-stage build that installs pinned training dependencies from \texttt{requirements/train.txt}. It reads hyperparameters dynamically from the mounted ConfigMap volume.
+    \item \textbf{\texttt{docker/Dockerfile.serve}}: A minimal inference image containing only FastAPI and Uvicorn. To meet security requirements, it creates a non-root user (\texttt{appuser}) and runs the service on port 8080 with a built-in \texttt{HEALTHCHECK} curling \texttt{http://localhost:8080/health}.
 \end{itemize}
 
-\subsection{Part B: PyTorch Model \& Application}
-\begin{itemize}
-    \item \textbf{Model Architecture (\texttt{src/model.py})}: Fine-tuned torchvision \texttt{ResNet-18} initialized with ImageNet weights (\texttt{weights="DEFAULT"}), replacing the final fully-connected linear layer with $\text{Linear}(512, 10)$.
-    \item \textbf{Data Pipeline (\texttt{src/dataset.py})}: Dataset streaming engine with multi-mirror failover, $64 \times 64$ scaling, ImageNet normalization ($\mu=[0.485, 0.456, 0.406], \sigma=[0.229, 0.224, 0.225]$), and data augmentations (Random Horizontal Flip, 15$^\circ$ Rotation, Color Jitter).
-    \item \textbf{Training Loop (\texttt{src/train.py})}: Reads hyperparameters from ConfigMap, logs JSON Lines events to \texttt{stdout}, applies Cosine Annealing learning rate schedule, logs metrics to MLflow, and saves the best model checkpoint to \texttt{/app/checkpoints/classifier\_v1.pt}.
-    \item \textbf{Inference Server (\texttt{src/serve.py})}: FastAPI service exposing \texttt{GET /health} and \texttt{POST /predict} returning softmax probabilities for all 10 CIFAR-10 classes.
+\subsection{3. Kubernetes Deployment}
+All manifests are organized under \texttt{k8s/} and deployed in the dedicated \texttt{ml-training} namespace:
+\begin{itemize}[noitemsep]
+    \item \textbf{Storage (\texttt{pvc-data.yaml}, \texttt{pvc-checkpoints.yaml})}: I created two PVCs backed by host volumes so that training data is cached across runs and model checkpoints persist after the training Job pod completes.
+    \item \textbf{Training Job (\texttt{training-job.yaml})}: Runs the training container as a Kubernetes batch Job. I configured CPU requests/limits to 4 cores and set \texttt{TORCH\_NUM\_THREADS=4} to maximize CPU parallelism.
+    \item \textbf{Serving Deployment (\texttt{serving-deployment.yaml})}: Runs 2 replicas with a \texttt{RollingUpdate} strategy. It mounts \texttt{checkpoint-pvc} in read-only mode, and configures Liveness and Readiness probes on \texttt{/health}.
+    \item \textbf{Autoscaling (\texttt{hpa.yaml})}: An HPA target that scales serving replicas from 1 to 3 if CPU utilization exceeds 80\%.
+    \item \textbf{Ingress (\texttt{ingress.yaml})}: Configured Nginx Ingress routes with regex path rewrites, exposing the Web UI at \texttt{/ml-training/}, inference at \texttt{/ml-training/predict}, and MLflow at \texttt{/ml-training/mlflow/}.
 \end{itemize}
 
-\subsection{Part C: Docker Containerization}
-\begin{itemize}
-    \item \textbf{Training Image (\texttt{docker/Dockerfile.train})}: Multi-stage build based on \texttt{python:3.11-slim} pulling CPU-only PyTorch wheels.
-    \item \textbf{Serving Image (\texttt{docker/Dockerfile.serve})}: Minimal inference runtime, exposes port 8080, enforces non-root execution (\texttt{USER appuser}, \texttt{TORCH\_HOME=/tmp}), and incorporates a native Docker \texttt{HEALTHCHECK}.
-\end{itemize}
+\section{Challenges Faced \& How I Solved Them}
 
-\subsection{Part D \& E: Kubernetes Orchestration}
-\begin{itemize}
-    \item \textbf{Namespace}: \texttt{ml-training} labeled with \texttt{project: mlops-pytorch-pipeline}.
-    \item \textbf{Storage}: Persistent Volume Claims \texttt{data-pvc} (5Gi) and \texttt{checkpoint-pvc} (2Gi) decouple data and checkpoint lifecycles from ephemeral container restarts.
-    \item \textbf{Training Job}: Kubernetes batch \texttt{Job} executing containerized PyTorch training with 4-core parallel CPU allocation and \texttt{TORCH\_NUM\_THREADS=4}.
-    \item \textbf{Serving Deployment}: 2 Replicas with \texttt{RollingUpdate} strategy (\texttt{maxSurge: 1, maxUnavailable: 0}), Liveness/Readiness probes against \texttt{/health}, ClusterIP Service exposing port 80 targeting 8080, and HPA scaling up to 3 replicas at 80\% CPU utilization.
-\end{itemize}
-
-\section{Major Technical Challenges \& Resolutions}
+During this project, I ran into several practical issues when moving from local code to a multi-tenant VM and Minikube cluster:
 
 \begin{enumerate}
-    \item \textbf{Docker Image Bloat (8.5 GB $\rightarrow$ 1.4 GB)}: Default PyPI PyTorch Linux wheels bundle full CUDA 12 and cuDNN shared libraries. Resolved by targeting \texttt{--extra-index-url https://download.pytorch.org/whl/cpu} in Dockerfiles, reducing image footprint by 83\%.
-    \item \textbf{Dataloader Shared Memory Deadlock \& OOM (Exit 137)}: Multiprocessing workers in containerized environments exceeded \texttt{/dev/shm} and tripled RAM consumption. Resolved by standardizing \texttt{num\_workers=0} for CPU container execution.
-    \item \textbf{Non-Root PyTorch Hub Permissions}: Non-root serving containers failed with \texttt{PermissionError: /nonexistent/.cache}. Resolved by configuring \texttt{ENV TORCH\_HOME=/tmp} and instantiating model architecture with \texttt{weights=None} before loading custom checkpoints.
-    \item \textbf{MLflow Distributed Artifact Uploads}: Remote client pods could not write to MLflow server disk. Resolved by adding \texttt{--serve-artifacts} to the MLflow tracking server to proxy all artifact streaming over HTTP multipart POST.
-    \item \textbf{Inference Image Dimension Mismatch}: High-resolution uploads were causing prediction drift. Unified inference preprocessing in \texttt{src/serve.py} via \texttt{get\_transforms(train=False, strategy="transfer\_learning")} to guarantee $64 \times 64$ resizing and ImageNet normalization.
-    \item \textbf{Transition to Transfer Learning}: Scratch training was slow ($>15$ epochs, $<40\%$ accuracy). Leveraging pre-trained ResNet-18 ImageNet weights and Cosine Annealing propelled validation accuracy to \textbf{77.26\% on Epoch 1} and $>85\%$ on subsequent epochs.
+    \item \textbf{Huge Docker Image Sizes (8.5 GB down to 1.4 GB)}:  
+    When building on Ubuntu, a regular \texttt{pip install torch} downloaded full NVIDIA CUDA 12 libraries even though our VM only has CPUs. I fixed this by adding \texttt{--extra-index-url https://download.pytorch.org/whl/cpu} in both Dockerfiles, reducing the image size by more than 80\%.
+
+    \item \textbf{DataLoader Multiprocessing Deadlocks \& OOM (Exit Code 137)}:  
+    Initially, the training container froze or got killed by Linux with exit code 137. This happened because \texttt{num\_workers=2} spawned subprocesses that quickly exhausted the default container shared memory (\texttt{/dev/shm}) and tripled memory usage. Setting \texttt{num\_workers=0} allowed the DataLoader to run cleanly on the main thread with low RAM usage (~375 MB).
+
+    \item \textbf{Non-Root User Permission Error in Serving Pod}:  
+    When running the serving pod as non-root (\texttt{USER appuser}), torchvision crashed with \texttt{PermissionError: '/nonexistent/.cache/torch/hub'}. I fixed this by setting \texttt{ENV TORCH\_HOME=/tmp} and instantiating the model with \texttt{weights=None} in \texttt{serve.py}, since the pod immediately loads the trained weights from the mounted checkpoint volume anyway.
+
+    \item \textbf{MLflow Remote Artifact Uploads across Pods}:  
+    The training Job logged metrics to MLflow, but failed when uploading the model file because it ran in a different pod than the MLflow tracking server. Passing the \texttt{--serve-artifacts} flag to MLflow enabled its HTTP artifact proxy so client pods could upload artifacts directly over HTTP POST.
+
+    \item \textbf{Inference Image Preprocessing Mismatch}:  
+    When testing predictions with user-uploaded camera images in the Web UI, I noticed inconsistent predictions. I realized \texttt{serve.py} wasn't resizing images before passing them to the model. Updating \texttt{serve.py} to use the exact same \texttt{get\_transforms()} helper as training ($64 \times 64$ resize + ImageNet normalization) fixed the classification accuracy.
 \end{enumerate}
 
-\section{Live Cluster Validation \& Logs}
+\section{Live Cluster Validation Logs}
 
-\subsection{Kubernetes Cluster Status}
-\begin{lstlisting}[language=bash]
-$ kubectl get pods,svc,ingress,hpa,pvc -n ml-training -o wide
+\subsection{1. Cluster Pods \& Services Status}
+\begin{lstlisting}
+$ kubectl get pods,svc,ingress,hpa,pvc -n ml-training
 
-NAME                                 READY   STATUS    RESTARTS   AGE   IP             NODE
-pod/mlflow-867fdbb5d8-8wdcw          1/1     Running   0          9h    10.244.0.178   minikube
-pod/model-serving-584d84f749-44bmn   1/1     Running   0          50m   10.244.0.217   minikube
-pod/model-training-h784t             1/1     Running   0          17m   10.244.0.219   minikube
-pod/web-ui-7b5645ff9d-9hjmr          1/1     Running   0          40m   10.244.0.218   minikube
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/mlflow-867fdbb5d8-8wdcw          1/1     Running   0          9h
+pod/model-serving-584d84f749-44bmn   1/1     Running   0          50m
+pod/model-training-h784t             1/1     Running   0          17m
+pod/web-ui-7b5645ff9d-9hjmr          1/1     Running   0          40m
 
 NAME                    TYPE        CLUSTER-IP      PORT(S)
 service/mlflow          ClusterIP   10.99.32.71     5000/TCP
 service/model-serving   ClusterIP   10.100.30.222   80/TCP
 service/web-ui          ClusterIP   10.100.236.41   80/TCP
 
-NAME                                              HOSTS                  ADDRESS        PORTS
-ingress.networking.k8s.io/model-serving-ingress   opssynergy.isroot.in   192.168.49.2   80, 443
-ingress.networking.k8s.io/web-ui-ingress          opssynergy.isroot.in   192.168.49.2   80, 443
-ingress.networking.k8s.io/mlflow-ui-ingress       opssynergy.isroot.in   192.168.49.2   80, 443
+NAME                                              HOSTS                  ADDRESS
+ingress.networking.k8s.io/model-serving-ingress   opssynergy.isroot.in   192.168.49.2
+ingress.networking.k8s.io/web-ui-ingress          opssynergy.isroot.in   192.168.49.2
+ingress.networking.k8s.io/mlflow-ui-ingress       opssynergy.isroot.in   192.168.49.2
 \end{lstlisting}
 
-\subsection{Training Structured Log Stream}
-\begin{lstlisting}[language=json]
+\subsection{2. Structured Training Output (Sample Log)}
+\begin{lstlisting}
 {"event": "epoch_start", "epoch": 1, "total_epochs": 10, "timestamp": "2026-08-30T17:03:57Z"}
 {"event": "batch_progress", "batch": 100, "total_batches": 391, "loss": 0.7758}
 {"event": "batch_progress", "batch": 200, "total_batches": 391, "loss": 0.7164}
-{"event": "batch_progress", "batch": 391, "total_batches": 391, "loss": 0.7694}
 {"epoch": 1, "train_loss": 0.7569, "train_accuracy": 0.7416, "val_loss": 0.6745, "val_accuracy": 0.7726}
 {"event": "checkpoint_saved", "path": "/app/checkpoints/classifier_v1.pt"}
 Successfully registered model 'cifar10-resnet18' version 1.
 \end{lstlisting}
 
-\subsection{Prediction API Validation}
-\begin{lstlisting}[language=bash]
+\subsection{3. Prediction API Test}
+\begin{lstlisting}
 $ curl -X POST https://opssynergy.isroot.in/ml-training/predict -F "image=@cat.png"
 {
   "predicted_class": 3,
@@ -180,6 +172,6 @@ $ curl -X POST https://opssynergy.isroot.in/ml-training/predict -F "image=@cat.p
 \end{lstlisting}
 
 \section{Conclusion}
-All requirements specified in the assignment rubric have been completely implemented, containerized, and validated live on the Kubernetes cluster. The pipeline satisfies strict non-root container security, reproducible persistent storage, declarative environment configuration, and resilient high-throughput inference serving.
+This pipeline successfully covers all the requirements in the assignment rubric. The workflow is fully containerized, reproducible, secure, and running live on Minikube with persistent checkpoints and autoscaling.
 
 \end{document}
