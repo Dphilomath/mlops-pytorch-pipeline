@@ -93,9 +93,9 @@ def get_transforms(
 ) -> transforms.Compose:
     transform_list = []
 
-    # Both transfer learning strategies (strategy_2, strategy_3) resize 32x32 images to 224x224
+    # Both transfer learning strategies (strategy_2, strategy_3) resize 32x32 images to 128x128
     if strategy in ["strategy_2", "strategy_3"]:
-        transform_list.append(transforms.Resize(224))
+        transform_list.append(transforms.Resize(128))
 
     if train:
         if strategy == "strategy_3":
@@ -115,7 +115,7 @@ def get_transforms(
                 [
                     transforms.RandomHorizontalFlip(),
                     transforms.RandomCrop(
-                        224 if strategy in ["strategy_2", "strategy_3"] else 32,
+                        128 if strategy in ["strategy_2", "strategy_3"] else 32,
                         padding=4,
                     ),
                 ]
