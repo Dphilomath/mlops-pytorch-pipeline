@@ -164,6 +164,66 @@ This document records the major engineering and operational challenges encounter
 
 ---
 
+## 10. Slow Convergence & Suboptimal Accuracy on Scratch Training (Transition to Transfer Learning)
+
+* **Symptom / Problem:**  
+  Training randomly initialized ResNet-18 models from scratch on CPU required extensive training epochs (>15–20 epochs) while remaining stuck at low validation accuracy (<40–50%), causing prolonged training jobs and unreliable classification.
+
+* **Root Cause Analysis:**  
+  Training from scratch forces the network to learn low-level visual features (edges, textures, spatial gradients) from zero priors. On CPU-bound Kubernetes pods, backpropagating through all randomly-initialized layers over hundreds of batches is computationally slow and requires large epoch budgets to reach convergence.
+
+* **Resolution:**  
+  Transitioned to **Transfer Learning** using pre-trained ImageNet weights (`torchvision.models.resnet18(weights="DEFAULT")`):
+  - Replaced the final classification layer (`nn.Linear(512, 10)`).
+  - Scaled CIFAR-10 images to $64 \times 64$ with ImageNet normalization (`mean=[0.485, 0.456, 0.406]`, `std=[0.229, 0.224, 0.225]`).
+  - Added SGD momentum (`0.9`) and Cosine Annealing learning rate scheduling.  
+  **Result:** Massive accuracy leap—achieving **`77.26%` validation accuracy on the very first epoch** (and >85%+ in subsequent epochs) with fast convergence.
+
+---
+
+## 11. Non-Root Serving Container PyTorch Hub Permission Error
+
+* **Symptom / Problem:**  
+  Model serving pods running as a non-root user (`USER appuser`) crashed with `PermissionError: [Errno 13] Permission denied: '/nonexistent/.cache/torch/hub/checkpoints'`.
+
+* **Root Cause Analysis:**  
+  Calling `models.resnet18(weights="DEFAULT")` attempts to write checkpoint caches into `$HOME/.cache/torch`. In hardened, non-root Linux containers where `$HOME` is unset or points to `/nonexistent`, the container cannot create directories in the root filesystem.
+
+* **Resolution:**  
+  - Added `ENV TORCH_HOME=/tmp` in `docker/Dockerfile.serve` and `k8s/serving-deployment.yaml`.
+  - In `src/serve.py`, instantiated the model architecture with `strategy="baseline"` (`weights=None`), since custom trained weights are immediately loaded from the mounted checkpoint volume (`/app/checkpoints/classifier_v1.pt`).  
+  **Result:** Fully compliant non-root container execution with zero filesystem permission crashes.
+
+---
+
+## 12. MLflow Distributed Artifact Upload Failure across Pods
+
+* **Symptom / Problem:**  
+  The training Job logged metrics to MLflow, but failed when registering the model artifact with `mlflow.exceptions.MlflowException: API request failed... unable to access /app/mlruns`.
+
+* **Root Cause Analysis:**  
+  By default, MLflow tracking clients attempt to write model artifacts directly to the local filesystem path of the tracking server (`/app/mlruns`). Because the training Job and the MLflow server run in separate Kubernetes pods, the training pod lacked direct volume access to the MLflow server's disk.
+
+* **Resolution:**  
+  Added the `--serve-artifacts` flag to the MLflow tracking server invocation in `docker-compose.yml` and `k8s/mlflow-deployment.yaml`. This enables MLflow's built-in HTTP artifact proxy, allowing client pods to stream artifacts via HTTP multipart POST.  
+  **Result:** Seamless remote experiment tracking and automated Model Registry versioning.
+
+---
+
+## 13. Inference Image Dimension Mismatch & Preprocessing Drift
+
+* **Symptom / Problem:**  
+  When testing real-world photos via the Web UI, high-resolution images (e.g. 1080p phone photos) were misclassified with skewed probabilities.
+
+* **Root Cause Analysis:**  
+  `src/serve.py` was converting uploaded PIL images directly to tensors without spatial resizing, passing raw $750 \times 640$ tensors into a model trained on $64 \times 64$ inputs. This caused the global average pooling layer to aggregate features over an area 100x larger than intended, and applied mismatched CIFAR-10 normalization instead of ImageNet normalization.
+
+* **Resolution:**  
+  Standardized inference preprocessing in `src/serve.py` by using `get_transforms(train=False, strategy="transfer_learning")`, ensuring every uploaded image is resized to $64 \times 64$ and normalized with ImageNet parameters matching the training pipeline.  
+  **Result:** Accurate, robust predictions on arbitrary uploaded user images.
+
+---
+
 ## Summary Table
 
 | Issue Area | Initial Behavior | Root Cause | Implemented Solution | Result |
@@ -177,3 +237,7 @@ This document records the major engineering and operational challenges encounter
 | **Dataset Download** | 42-minute download stall | Throttled single university server | Multi-mirror engine + chunked streaming | Resilient downloads + instant PVC cache |
 | **Public Ingress** | 404/502 on subpath routing | FastAPI unstripped subpath mismatch | NGINX regex rewrite target (`/$2`) | Clean `opssynergy.isroot.in/ml-training/*` ingress |
 | **CI Discovery** | `ModuleNotFoundError: src` | `sys.path` missing repo root in CI | Added `pytest.ini` with `pythonpath = .` | 100% CI automated test pass |
+| **Model Convergence** | <40% accuracy after 10 epochs on scratch CNN | Learning primitive visual filters from scratch on CPU | Pre-trained ResNet-18 Transfer Learning + ImageNet norms | **`77.26%` accuracy on Epoch 1**, >85%+ convergence |
+| **Non-Root Serving** | `PermissionError: /nonexistent` crash | PyTorch hub trying to write cache to root `$HOME` | `ENV TORCH_HOME=/tmp` + `weights=None` in serve | Clean non-root container execution |
+| **MLflow Artifacts** | Remote client artifact upload failure | Client lacks shared filesystem access to MLflow pod | Enabled `--serve-artifacts` HTTP proxy | Distributed model registry & artifact tracking |
+| **Inference Drift** | High-res photos misclassified | Missing $64 \times 64$ resizing and ImageNet norm in serve | Unified inference transform with `get_transforms()` | Reliable predictions on arbitrary user uploads |
