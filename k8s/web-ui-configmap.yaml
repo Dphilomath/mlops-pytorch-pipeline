@@ -1,0 +1,418 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-ui-html
+  namespace: ml-training
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>CIFAR-10 Image Classifier</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --bg-color: #0b0f19;
+                --card-bg: rgba(17, 25, 40, 0.75);
+                --border-color: rgba(255, 255, 255, 0.1);
+                --primary: #4f46e5;
+                --primary-hover: #6366f1;
+                --secondary: rgba(255, 255, 255, 0.08);
+                --secondary-hover: rgba(255, 255, 255, 0.15);
+                --text-color: #f3f4f6;
+                --text-muted: #9ca3af;
+                --accent: #10b981;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                font-family: 'Outfit', sans-serif;
+            }
+            body {
+                background-color: var(--bg-color);
+                background-image: 
+                    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+                color: var(--text-color);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+            }
+            .container {
+                max-width: 600px;
+                width: 100%;
+                background: var(--card-bg);
+                backdrop-filter: blur(16px) saturate(180%);
+                border: 1px solid var(--border-color);
+                border-radius: 24px;
+                padding: 2.5rem;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            }
+            h1 {
+                font-size: 2.25rem;
+                font-weight: 800;
+                text-align: center;
+                margin-bottom: 0.5rem;
+                background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            p.subtitle {
+                text-align: center;
+                color: var(--text-muted);
+                margin-bottom: 2rem;
+                font-size: 1rem;
+            }
+            .dropzone {
+                border: 2px dashed rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                padding: 3rem 2rem;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.02);
+                position: relative;
+            }
+            .dropzone:hover, .dropzone.dragover {
+                border-color: var(--primary);
+                background: rgba(79, 70, 229, 0.05);
+            }
+            .dropzone input {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+            }
+            .dropzone-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                display: inline-block;
+                transition: transform 0.3s ease;
+            }
+            .dropzone:hover .dropzone-icon {
+                transform: translateY(-5px);
+            }
+            .preview-container {
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                padding: 1.5rem;
+                position: relative;
+            }
+            .preview-image-wrapper {
+                position: relative;
+                max-width: 100%;
+                display: flex;
+                justify-content: center;
+                margin-bottom: 1.25rem;
+            }
+            .preview-image {
+                max-width: 100%;
+                max-height: 260px;
+                border-radius: 14px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+                object-fit: contain;
+            }
+            .file-info {
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                margin-bottom: 1rem;
+                background: rgba(0, 0, 0, 0.3);
+                padding: 0.35rem 0.85rem;
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .btn-group {
+                display: flex;
+                gap: 0.75rem;
+                width: 100%;
+            }
+            .btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                border: none;
+                padding: 0.9rem 1.25rem;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.25s ease;
+            }
+            .btn-primary {
+                flex: 2;
+                background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+                color: white;
+                box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+            }
+            .btn-primary:hover {
+                background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+                box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+            }
+            .btn-secondary {
+                flex: 1;
+                background: var(--secondary);
+                color: var(--text-color);
+                border: 1px solid var(--border-color);
+            }
+            .btn-secondary:hover {
+                background: var(--secondary-hover);
+                border-color: rgba(255, 255, 255, 0.25);
+            }
+            .btn:active {
+                transform: scale(0.98);
+            }
+            .btn:disabled {
+                background: var(--text-muted);
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
+            .loading {
+                display: none;
+                text-align: center;
+                margin-top: 1.5rem;
+            }
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid rgba(255,255,255,0.1);
+                border-top-color: var(--primary);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                display: inline-block;
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            .results {
+                margin-top: 2rem;
+                display: none;
+                border-top: 1px solid var(--border-color);
+                padding-top: 1.5rem;
+            }
+            .prediction-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+            }
+            .predicted-class {
+                font-size: 1.75rem;
+                font-weight: 800;
+                color: var(--accent);
+                text-transform: capitalize;
+            }
+            .predicted-conf {
+                font-size: 1.25rem;
+                font-weight: 600;
+            }
+            .prob-bar-container {
+                margin-bottom: 0.75rem;
+            }
+            .prob-label-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 0.25rem;
+                font-size: 0.9rem;
+                text-transform: capitalize;
+            }
+            .prob-bar-bg {
+                background: rgba(255, 255, 255, 0.05);
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .prob-bar-fill {
+                background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+                height: 100%;
+                width: 0%;
+                transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>CIFAR-10 Classifier</h1>
+            <p class="subtitle">Upload an image to classify into one of the 10 CIFAR classes</p>
+            
+            <!-- Upload Zone -->
+            <div class="dropzone" id="dropzone">
+                <span class="dropzone-icon">📷</span>
+                <p id="dropzone-text">Drag & drop your image here or click to browse</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <!-- Preview & Action Zone -->
+            <div class="preview-container" id="previewContainer">
+                <div class="preview-image-wrapper">
+                    <img src="" alt="Preview" class="preview-image" id="previewImage">
+                </div>
+                <div class="file-info" id="fileInfo">image.png</div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="changeImageBtn">🔄 Change Image</button>
+                    <button class="btn btn-primary" id="predictBtn">✨ Classify Image</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 0.5rem; color: var(--text-muted);">Running inference...</p>
+            </div>
+
+            <div class="results" id="results">
+                <div class="prediction-header">
+                    <div>
+                        <span style="font-size: 0.9rem; color: var(--text-muted); display: block;">Prediction</span>
+                        <span class="predicted-class" id="predClass">-</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.9rem; color: var(--text-muted); display: block;">Confidence</span>
+                        <span class="predicted-conf" id="predConf">0%</span>
+                    </div>
+                </div>
+                
+                <div id="probabilitiesList"></div>
+            </div>
+        </div>
+
+        <script>
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const fileInfo = document.getElementById('fileInfo');
+            const changeImageBtn = document.getElementById('changeImageBtn');
+            const predictBtn = document.getElementById('predictBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const predClass = document.getElementById('predClass');
+            const predConf = document.getElementById('predConf');
+            const probabilitiesList = document.getElementById('probabilitiesList');
+
+            let activeFile = null;
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            changeImageBtn.addEventListener('click', () => {
+                fileInput.value = '';
+                fileInput.click();
+            });
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            function handleFile(file) {
+                activeFile = file;
+                fileInfo.innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    dropzone.style.display = 'none';
+                    previewContainer.style.display = 'flex';
+                    results.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            predictBtn.addEventListener('click', async () => {
+                if (!activeFile) return;
+
+                results.style.display = 'none';
+                loading.style.display = 'block';
+                predictBtn.disabled = true;
+                changeImageBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('image', activeFile);
+
+                try {
+                    // Endpoint target /predict path prefix
+                    const endpoint = "/ml-training/predict";
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Prediction request failed');
+                    }
+
+                    const data = await response.json();
+                    displayResults(data);
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    loading.style.display = 'none';
+                    predictBtn.disabled = false;
+                    changeImageBtn.disabled = false;
+                }
+            });
+
+            function displayResults(data) {
+                predClass.innerText = data.class_name;
+                predConf.innerText = (data.probability * 100).toFixed(1) + '%';
+
+                probabilitiesList.innerHTML = '';
+                
+                const sortedProbs = Object.entries(data.probabilities)
+                    .sort((a, b) => b[1] - a[1]);
+
+                sortedProbs.forEach(([label, val]) => {
+                    const percentage = (val * 100).toFixed(1) + '%';
+                    const row = document.createElement('div');
+                    row.className = 'prob-bar-container';
+                    row.innerHTML = `
+                        <div class="prob-label-row">
+                            <span>${label}</span>
+                            <span>${percentage}</span>
+                        </div>
+                        <div class="prob-bar-bg">
+                            <div class="prob-bar-fill" style="width: 0%"></div>
+                        </div>
+                    `;
+                    probabilitiesList.appendChild(row);
+                    
+                    setTimeout(() => {
+                        row.querySelector('.prob-bar-fill').style.width = percentage;
+                    }, 100);
+                });
+
+                results.style.display = 'block';
+                results.scrollIntoView({ behavior: 'smooth' });
+            }
+        </script>
+    </body>
+    </html>

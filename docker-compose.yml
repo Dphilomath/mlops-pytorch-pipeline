@@ -16,6 +16,9 @@ services:
       - CONFIG_PATH=/app/configs/training_config.yaml
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - mlflow
 
   serving:
     build:
@@ -23,9 +26,7 @@ services:
       dockerfile: docker/Dockerfile.serve
     container_name: serving
     ports:
-      - "9876:9876"
-    # command removed – ENTRYPOINT in Dockerfile sets the port
-
+      - "8080:8080"
     volumes:
       - ./checkpoints:/app/checkpoints:ro
     deploy:
@@ -36,3 +37,14 @@ services:
     environment:
       - CONFIG_PATH=/app/configs/serving_config.yaml
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+  mlflow:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "pip install mlflow==2.12.1 && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /app/mlruns --serve-artifacts"
+    volumes:
+      - ./mlflow-data:/app
+

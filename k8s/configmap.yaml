@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ml-training-config
+  name: training-config
   namespace: ml-training
 data:
   training_config.yaml: |
@@ -12,9 +12,12 @@ data:
       data_dir: /app/data
       dataset: cifar10
     training:
+      strategy: "transfer_learning"
+      optimizer: "sgd"
+      scheduler: "cosine"
       epochs: 10
-      batch_size: 64
-      learning_rate: 0.001
+      batch_size: 128
+      learning_rate: 0.1
       early_stopping_patience: 3
     output:
       checkpoint_dir: /app/checkpoints

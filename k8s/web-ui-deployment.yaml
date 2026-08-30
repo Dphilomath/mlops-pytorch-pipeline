@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-ui
+  namespace: ml-training
+  labels:
+    project: mlops-pytorch-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-ui
+      project: mlops-pytorch-pipeline
+  template:
+    metadata:
+      labels:
+        app: web-ui
+        project: mlops-pytorch-pipeline
+    spec:
+      containers:
+      - name: web-ui
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+      restartPolicy: Always
+      volumes:
+      - name: html-volume
+        configMap:
+          name: web-ui-html
+          items:
+          - key: index.html
+            path: index.html

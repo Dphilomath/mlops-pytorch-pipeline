@@ -1,13 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: model-serving
+  name: web-ui
   namespace: ml-training
+  labels:
+    project: mlops-pytorch-pipeline
 spec:
   type: ClusterIP
   selector:
-    app: model-serving
+    app: web-ui
+    project: mlops-pytorch-pipeline
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 8080
+    targetPort: 80

@@ -5,6 +5,11 @@ metadata:
   namespace: ml-training
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: model-serving
@@ -16,20 +21,37 @@ spec:
       containers:
       - name: serving
         image: ghcr.io/dphilomath/mlops-serve:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 9876
+        - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: ml-training-config
+            name: training-config
+        env:
+        - name: TORCH_HOME
+          value: /tmp
         volumeMounts:
         - name: config-volume
           mountPath: /app/configs
         - name: checkpoint-volume
           mountPath: /app/checkpoints
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          periodSeconds: 5
+          initialDelaySeconds: 15
         resources:
           requests:
-            cpu: 250m
-            memory: 512Mi
+            cpu: 500m
+            memory: 1Gi
           limits:
             cpu: 1000m
             memory: 2Gi
@@ -37,7 +59,7 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: ml-training-config
+          name: training-config
           items:
           - key: serving_config.yaml
             path: serving_config.yaml
