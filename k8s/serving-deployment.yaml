@@ -21,11 +21,15 @@ spec:
       containers:
       - name: serving
         image: ghcr.io/dphilomath/mlops-serve:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         envFrom:
         - configMapRef:
             name: training-config
+        env:
+        - name: TORCH_HOME
+          value: /tmp
         volumeMounts:
         - name: config-volume
           mountPath: /app/configs
