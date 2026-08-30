@@ -117,7 +117,7 @@ def main():
     torch.set_num_threads(num_threads)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    strategy = config["training"].get("strategy", "strategy_2")
+    strategy = config["training"].get("strategy", "transfer_learning")
     architecture = config["model"]["architecture"]
     num_classes = config["model"]["num_classes"]
 

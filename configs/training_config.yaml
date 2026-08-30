@@ -7,9 +7,9 @@ data:
   dataset: cifar10
 
 training:
-  strategy: "strategy_3"  # Options: strategy_2, strategy_3
-  optimizer: "sgd"        # Options: adam, sgd
-  scheduler: "cosine"     # Options: none, cosine
+  strategy: "transfer_learning"  # Options: transfer_learning, transfer_learning_basic, scratch
+  optimizer: "sgd"               # Options: adam, sgd
+  scheduler: "cosine"            # Options: none, cosine
   epochs: 10
   batch_size: 128
   learning_rate: 0.1

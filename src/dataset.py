@@ -89,17 +89,27 @@ def ensure_cifar10_dataset(data_dir: str):
 
 
 def get_transforms(
-    train: bool = True, strategy: str = "strategy_2"
+    train: bool = True, strategy: str = "transfer_learning"
 ) -> transforms.Compose:
     transform_list = []
 
-    # Both transfer learning strategies resize 32x32 images to 64x64
-    if strategy in ["strategy_2", "strategy_3"]:
+    # Transfer learning strategies resize 32x32 images to 64x64 for ResNet feature extractors
+    is_transfer = strategy.startswith("transfer_learning") or strategy in [
+        "strategy_2",
+        "strategy_3",
+    ]
+    is_tuned = strategy in [
+        "transfer_learning",
+        "transfer_learning_tuned",
+        "strategy_3",
+    ]
+
+    if is_transfer:
         transform_list.append(transforms.Resize(64))
 
     if train:
-        if strategy == "strategy_3":
-            # Advanced data augmentations for tuned transfer learning (strategy_3)
+        if is_tuned:
+            # Advanced data augmentations for tuned transfer learning
             transform_list.extend(
                 [
                     transforms.RandomHorizontalFlip(),
@@ -115,7 +125,7 @@ def get_transforms(
                 [
                     transforms.RandomHorizontalFlip(),
                     transforms.RandomCrop(
-                        64 if strategy in ["strategy_2", "strategy_3"] else 32,
+                        64 if is_transfer else 32,
                         padding=4,
                     ),
                 ]
@@ -123,7 +133,7 @@ def get_transforms(
 
     transform_list.append(transforms.ToTensor())
 
-    if strategy in ["strategy_2", "strategy_3"]:
+    if is_transfer:
         # Standard ImageNet normalization for transfer learning models
         transform_list.append(
             transforms.Normalize(
@@ -147,7 +157,7 @@ def get_dataloaders(
     data_dir: str,
     batch_size: int = 64,
     num_workers: int = 0,
-    strategy: str = "strategy_2",
+    strategy: str = "transfer_learning",
 ) -> tuple[DataLoader, DataLoader]:
     ensure_cifar10_dataset(data_dir)
 

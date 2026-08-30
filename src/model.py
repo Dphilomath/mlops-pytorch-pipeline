@@ -3,14 +3,16 @@ from torchvision import models
 
 
 def get_model(
-    architecture: str = "resnet18", num_classes: int = 10, strategy: str = "strategy_2"
+    architecture: str = "resnet18",
+    num_classes: int = 10,
+    strategy: str = "transfer_learning",
 ):
     """Return a torchvision model adapted for the given training strategy.
 
     Args:
         architecture: Name of the torchvision model (e.g., "resnet18", "vgg16").
         num_classes: Number of output classes for the classifier.
-        strategy: Optimization strategy ("strategy_2" for baseline, "strategy_3" for tuned).
+        strategy: Optimization strategy ("transfer_learning", "scratch", etc.).
     """
     # Map supported architectures to torchvision constructors
     arch_map = {
@@ -24,8 +26,11 @@ def get_model(
             f"Unsupported architecture '{architecture}'. Supported: {list(arch_map.keys())}"
         )
 
-    # Both strategy_2 and strategy_3 use pre-trained ImageNet weights (transfer learning)
-    if strategy in ["strategy_2", "strategy_3"]:
+    # Transfer learning strategies use pre-trained ImageNet weights
+    if strategy.startswith("transfer_learning") or strategy in [
+        "strategy_2",
+        "strategy_3",
+    ]:
         weights = "DEFAULT"
     else:
         weights = None

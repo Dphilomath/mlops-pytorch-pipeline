@@ -12,7 +12,7 @@ data:
       data_dir: /app/data
       dataset: cifar10
     training:
-      strategy: "strategy_3"
+      strategy: "transfer_learning"
       optimizer: "sgd"
       scheduler: "cosine"
       epochs: 10
