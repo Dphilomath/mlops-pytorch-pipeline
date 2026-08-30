@@ -9,9 +9,9 @@ import datetime
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 import torch
-from torchvision import transforms
 from PIL import Image
 from src.model import get_model
+from src.dataset import get_transforms
 
 app = FastAPI()
 
@@ -77,16 +77,8 @@ logger.info(
     )
 )
 
-# Image preprocessing (same as training)
-transform = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.4914, 0.4822, 0.4465],
-            std=[0.2470, 0.2435, 0.2616],
-        ),
-    ]
-)
+# Image preprocessing matching the training strategy (resizing to 64x64 and ImageNet normalization)
+transform = get_transforms(train=False, strategy="transfer_learning")
 
 
 @app.get("/")
