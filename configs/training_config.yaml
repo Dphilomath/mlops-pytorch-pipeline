@@ -11,7 +11,7 @@ training:
   optimizer: "sgd"        # Options: adam, sgd
   scheduler: "cosine"     # Options: none, cosine
   epochs: 10
-  batch_size: 64
+  batch_size: 128
   learning_rate: 0.1
   early_stopping_patience: 3
 

@@ -112,8 +112,9 @@ def main():
         time.sleep(2)
         mlflow.set_experiment("cifar10-optimization")
 
-    # Use all available CPU cores for PyTorch linear algebra ops
-    torch.set_num_threads(2)
+    # Parallelize linear algebra operations across available CPU cores
+    num_threads = int(os.getenv("TORCH_NUM_THREADS", "4"))
+    torch.set_num_threads(num_threads)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     strategy = config["training"].get("strategy", "strategy_2")
