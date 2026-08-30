@@ -12,6 +12,8 @@
             --border-color: rgba(255, 255, 255, 0.1);
             --primary: #4f46e5;
             --primary-hover: #6366f1;
+            --secondary: rgba(255, 255, 255, 0.08);
+            --secondary-hover: rgba(255, 255, 255, 0.15);
             --text-color: #f3f4f6;
             --text-muted: #9ca3af;
             --accent: #10b981;
@@ -93,34 +95,76 @@
             transform: translateY(-5px);
         }
         .preview-container {
-            margin-top: 1.5rem;
             display: none;
             flex-direction: column;
             align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+        }
+        .preview-image-wrapper {
+            position: relative;
+            max-width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.25rem;
         }
         .preview-image {
             max-width: 100%;
-            max-height: 200px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            max-height: 260px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            object-fit: contain;
+        }
+        .file-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            width: 100%;
         }
         .btn {
-            display: block;
-            width: 100%;
-            background: var(--primary);
-            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
             border: none;
-            padding: 1rem;
+            padding: 0.9rem 1.25rem;
             border-radius: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 1.5rem;
-            transition: background 0.3s ease, transform 0.1s ease;
+            transition: all 0.25s ease;
         }
-        .btn:hover {
-            background: var(--primary-hover);
+        .btn-primary {
+            flex: 2;
+            background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+        }
+        .btn-secondary {
+            flex: 1;
+            background: var(--secondary);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background: var(--secondary-hover);
+            border-color: rgba(255, 255, 255, 0.25);
         }
         .btn:active {
             transform: scale(0.98);
@@ -128,6 +172,7 @@
         .btn:disabled {
             background: var(--text-muted);
             cursor: not-allowed;
+            opacity: 0.6;
         }
         .loading {
             display: none;
@@ -197,15 +242,23 @@
         <h1>CIFAR-10 Classifier</h1>
         <p class="subtitle">Upload an image to classify into one of the 10 CIFAR classes</p>
         
+        <!-- Upload Zone -->
         <div class="dropzone" id="dropzone">
             <span class="dropzone-icon">📷</span>
             <p id="dropzone-text">Drag & drop your image here or click to browse</p>
             <input type="file" id="fileInput" accept="image/*">
         </div>
 
+        <!-- Preview & Action Zone -->
         <div class="preview-container" id="previewContainer">
-            <img src="" alt="Preview" class="preview-image" id="previewImage">
-            <button class="btn" id="predictBtn">Classify Image</button>
+            <div class="preview-image-wrapper">
+                <img src="" alt="Preview" class="preview-image" id="previewImage">
+            </div>
+            <div class="file-info" id="fileInfo">image.png</div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="changeImageBtn">🔄 Change Image</button>
+                <button class="btn btn-primary" id="predictBtn">✨ Classify Image</button>
+            </div>
         </div>
 
         <div class="loading" id="loading">
@@ -234,6 +287,8 @@
         const fileInput = document.getElementById('fileInput');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
+        const fileInfo = document.getElementById('fileInfo');
+        const changeImageBtn = document.getElementById('changeImageBtn');
         const predictBtn = document.getElementById('predictBtn');
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
@@ -247,6 +302,11 @@
             if (e.target.files.length > 0) {
                 handleFile(e.target.files[0]);
             }
+        });
+
+        changeImageBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            fileInput.click();
         });
 
         dropzone.addEventListener('dragover', (e) => {
@@ -268,9 +328,11 @@
 
         function handleFile(file) {
             activeFile = file;
+            fileInfo.innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
             const reader = new FileReader();
             reader.onload = (e) => {
                 previewImage.src = e.target.result;
+                dropzone.style.display = 'none';
                 previewContainer.style.display = 'flex';
                 results.style.display = 'none';
             };
@@ -283,6 +345,7 @@
             results.style.display = 'none';
             loading.style.display = 'block';
             predictBtn.disabled = true;
+            changeImageBtn.disabled = true;
 
             const formData = new FormData();
             formData.append('image', activeFile);
@@ -307,6 +370,7 @@
             } finally {
                 loading.style.display = 'none';
                 predictBtn.disabled = false;
+                changeImageBtn.disabled = false;
             }
         });
 
