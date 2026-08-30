@@ -93,7 +93,7 @@ def get_transforms(
 ) -> transforms.Compose:
     transform_list = []
 
-    # Both transfer learning strategies (strategy_2, strategy_3) resize 32x32 images to 128x128
+    # Both transfer learning strategies (slooktrategy_2, strategy_3) resize 32x32 images to 128x128
     if strategy in ["strategy_2", "strategy_3"]:
         transform_list.append(transforms.Resize(128))
 

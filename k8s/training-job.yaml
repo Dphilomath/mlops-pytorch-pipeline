@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: model-training-s2
+  name: model-training
   namespace: ml-training
   labels:
     project: mlops-pytorch-pipeline
@@ -41,7 +41,7 @@ spec:
         configMap:
           name: training-config
           items:
-          - key: training_config_s2.yaml
+          - key: training_config.yaml
             path: training_config.yaml
       - name: data-volume
         persistentVolumeClaim:
