@@ -51,18 +51,15 @@ def train_one_epoch(
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
-        if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == len(loader):
-            logger.debug(
-                json.dumps(
-                    {
-                        "event": "batch_progress",
-                        "batch": batch_idx + 1,
-                        "total_batches": len(loader),
-                        "loss": loss.item(),
-                        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-                    }
-                )
-            )
+        if (batch_idx + 1) % 50 == 0 or (batch_idx + 1) == len(loader):
+            progress_data = {
+                "event": "batch_progress",
+                "batch": batch_idx + 1,
+                "total_batches": len(loader),
+                "loss": round(loss.item(), 4),
+                "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+            }
+            print(json.dumps(progress_data), flush=True)
     avg_loss = total_loss / total
     accuracy = correct / total
     return avg_loss, accuracy

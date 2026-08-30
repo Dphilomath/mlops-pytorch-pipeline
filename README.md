@@ -24,6 +24,18 @@ flowchart TD
     class DockerImageTrain,DockerImageServe orange;
 ```
 
+## Transfer Learning Strategy
+The pipeline leverages **Transfer Learning** using a pre-trained **ResNet-18** model initialized with ImageNet weights (`weights="DEFAULT"`) to achieve high accuracy and fast convergence on CIFAR-10:
+* **Architecture (`src/model.py`)**: Torchvision ResNet-18 with the final fully-connected linear layer adapted from 1000 ImageNet classes to 10 CIFAR-10 classes (`nn.Linear(512, 10)`).
+* **Data Preprocessing & Augmentation (`src/dataset.py`)**:
+  * Resizes input images to $64 \times 64$ to optimize transfer learning feature representations while maintaining fast CPU compute throughput.
+  * Applies ImageNet normalization (`mean=[0.485, 0.456, 0.406]`, `std=[0.229, 0.224, 0.225]`).
+  * Augmentations: Random Horizontal Flip, Random Rotation (15°), and Color Jitter (brightness/contrast/saturation).
+* **Optimization & Scheduling (`src/train.py`)**:
+  * Optimizer: **SGD** with momentum (`momentum=0.9`, `weight_decay=5e-4`).
+  * Learning Rate Scheduler: **Cosine Annealing** (`CosineAnnealingLR`), decaying from `lr=0.1` smoothly down to `lr=0.001`.
+* **Experiment Tracking & Model Registry**: Integrated with **MLflow** (`http://mlflow:5000` / `/ml-training/mlflow/`) to track loss, accuracy curves, and automatically register the best epoch checkpoint.
+
 ## Quick Start (Docker)
 
 ```bash
